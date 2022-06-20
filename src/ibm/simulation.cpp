@@ -23,12 +23,24 @@ Simulation::run()
     // each and every time step
     for (time_step = 0; time_step < par.max_time_steps; ++time_step)
     {
-
+        // 
     }
 } // end Simulation::run()
 
 void Simulation::write_data_headers()
-{}
+{
+}
 
 void Simulation::write_data()
-{}
+{
+}
+
+void Simulation::write_all_networks()
+{
+    // loop through all patches and plot the respective networks
+    for (int patch_idx = 0; patch_idx < metapop.size(); ++patch_idx)
+    {
+
+    }
+
+}

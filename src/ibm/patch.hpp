@@ -3,10 +3,13 @@
 
 #include "individual.hpp"
 
+// blueprint of the patch class
+
 class Patch
 {
-    std::vector < std::vector < Individual > > breeders;
-    std::vector < std::vector < Individual > > juveniles;
+    private:
+        std::vector < std::vector < Individual > > breeders;
+        std::vector < std::vector < Individual > > juveniles;
 
     public:
         // Patch constructor: make a patch with nf females and nm males
@@ -14,8 +17,7 @@ class Patch
                 ,int const nm);
         
         // copy constructor - makes a patch out of another patch
-        Patch(int const nf
-                ,int const nm);
+        Patch(Patch const &other);
 
         void operator=(Patch const &other);
 };
