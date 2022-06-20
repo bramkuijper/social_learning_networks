@@ -1,3 +1,5 @@
+#include <vector> // to work with vectors
+#include <cassert> // to assert things - for debugging 
 #include "patch.hpp"
 #include "individual.hpp"
 
@@ -5,6 +7,8 @@
 Patch::Patch(
         int const nf
         ,int const nm) :
+    nf{nf}
+    ,nm{nm}
 {
     // initialize the population of male and female breeders
     
@@ -25,9 +29,24 @@ Patch::Patch(
     std::vector<Individual> juvsf(0, Individual());
     std::vector<Individual> juvsm(0, Individual());
 
-    juveniles.push_back(juvsf, juvsm);
+    // add the females and then the males, resulting in a 
+    // 2 dimensional vector of juveniles 
+    juveniles.push_back(juvsf);
+    juveniles.push_back(juvsm);
     assert(juveniles.size() == 2);
 
+    // make the social network which spans 
+    // (nf + nm) x (nf + nm) dimensions
+    //
+    // make a single row first of size nf + nm
+    std::vector < bool > network_row(nf + nm, false);
+    // then assign that row nf + nm times to the network
+    // creating a (nf + nm) x (nf + nm) dimensional array 
+    // (aka a (nf+nm) dimensional square matrix)
+    for (int row_idx = 0; row_idx < nf + nm; ++row_idx)
+    {
+        network.push_back(network_row);
+    }
 } // end Patch::Patch()
  
 // make a copy constructor. This constructor makes a copy of
@@ -35,9 +54,17 @@ Patch::Patch(
 // in vectors (which we do, to create the metapopulation as a whole)
 // as that requires the successive copying of a patch object
 Patch::Patch(Patch const &other) :
-    breeders{other.breeders[0],other.breeders[1]}
+    nf{other.nf}
+    ,nm{other.nm}
+    ,breeders{other.breeders[0],other.breeders[1]}
     ,juveniles{other.juveniles[0],other.juveniles[1]}
 {
+    for (int row_idx = 0; row_idx < nf + nm; ++row_idx)
+    {
+        network.push_back(other.network[row_idx]);
+    }
+
+    assert(network.size() == nf + nm);
 } // end Patch::Patch(Patch const &other)
 
 // overload the assignment operator so that we can assign
@@ -45,9 +72,20 @@ Patch::Patch(Patch const &other) :
 // some of its contents
 void Patch::operator=(Patch const &other)
 {
+    nf = other.nf;
+    nm = other.nm;
     for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
     {
         breeders[sex_idx] = other.breeders[sex_idx];
         juveniles[sex_idx] = other.juveniles[sex_idx];
     }
+
+    network.clear();
+    
+    for (int row_idx = 0; row_idx < nf + nm; ++row_idx)
+    {
+        network.push_back(other.network[row_idx]);
+    }
+    
+    assert(network.size() == nf + nm);
 } // end Patch::Patch(Patch const &other)

@@ -4,7 +4,7 @@
 #include <random>
 #include "parameters.hpp"
 
-class
+class Individual
 {
     public:
         // learn from parent

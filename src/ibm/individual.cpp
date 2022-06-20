@@ -1,4 +1,7 @@
+#include <random>
+#include <algorithm>
 #include "individual.hpp"
+#include "parameters.hpp"
 
 Individual::Individual() : // data member initializer list
     pp{0.0,0.0}
@@ -23,7 +26,7 @@ void Individual::operator=(Individual const &other)
     }
 }
 
-void Individual::Individual(
+Individual::Individual(
         Individual const &mother
         ,Individual const &father
         ,Parameters const &params

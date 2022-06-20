@@ -1,20 +1,24 @@
+#include <random>
+#include <vector>
 #include "simulation.hpp"
 #include "patch.hpp"
+#include "individual.hpp"
+#include "parameters.hpp"
 
 // the simulation constructor which 
 // initializes everything
-Simulation::Simulation(Parameters &par) :
+Simulation::Simulation(Parameters const &par) :
     rd{} // initialize random device, see *.hpp file
     ,seed{rd()} // initialize seed
     ,rng_r{seed} // initialize the random number generator
     ,uniform{0.0,1.0} // initialize the normal distribution
-    ,data_file{params.base_name.c_str()} // initialize the data file by giving it a name
-    ,par{params} // initialize the parameter data member with the constructor argument
-    ,metapop{par.npatches, Patch(par.npp[0],par.npp[1])} // initialize a meta population each with n1 individuals of species 1 and n2 individuals of species 2
+    ,data_file{par.base_name.c_str()} // initialize the data file by giving it a name
+    ,par{par} // initialize the parameter data member with the constructor argument
+    ,metapop{par.npatches, Patch(par.n[0],par.n[1])} // initialize a meta population each with n1 individuals of species 1 and n2 individuals of species 2
 {} // end IBM_Mutualism
 
 // run the simulation
-Simulation::run()
+void Simulation::run()
 {
     // write the headers to the output file
     write_data_headers();
@@ -40,7 +44,15 @@ void Simulation::write_all_networks()
     // loop through all patches and plot the respective networks
     for (int patch_idx = 0; patch_idx < metapop.size(); ++patch_idx)
     {
+        sum_cols = metapop[patch_idx].nf + metapop[patch_idx].nm;
+        sum_rows = sum_cols;
+        for (int row_idx = 0; row_idx < sum_rows; ++row_idx)
+        {
+            for (int col_idx = 0; col_idx < sum_cols; ++col_idx)
+            {
 
+            }
+
+        }
     }
-
 }

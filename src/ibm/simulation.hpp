@@ -5,6 +5,7 @@
 #include <fstream>
 #include <random>
 #include <vector>
+#include "patch.hpp"
 #include "parameters.hpp"
 
 // Simulation class represents the heart of the code
@@ -48,9 +49,12 @@ class Simulation
         int nsurvivors[2] = {0,0};
         double mean_offspring[2] = {0.0,0.0};
 
+        // the metapopulation consisting of pods, here called patches
+        std::vector < Patch > metapop;
+
     public:
         // the simulation constructor - building a simulation object
-        Simulation(Parameters &params);
+        Simulation(Parameters const &params);
 
         // function that writes data headers to the output file
         void write_data_headers();
@@ -58,6 +62,8 @@ class Simulation
         void write_data();
         // function that writes parameters to the output file
         void write_parameters();
+        // write all the networks to the output file
+        void write_all_networks();
 
         // function that actually runs the simulation
         void run();
