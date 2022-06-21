@@ -13,9 +13,12 @@ class Patch
         std::vector < std::vector < Individual > > juveniles;
         std::vector < std::vector < bool > > network;
 
+        // number of female and male breeders
         int nf;
         int nm;
 
+
+        // local environmental state
         bool envt2;
 
         // Patch constructor: make a patch with nf females and nm males

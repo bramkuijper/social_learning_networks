@@ -9,6 +9,7 @@ Individual::Individual(int const repertoire_size) : // data member initializer l
     ,pc{0.0,0.0}
     ,pr{0.0,0.0}
     ,repertoire(repertoire_size,0)
+    ,Wi{0.0}
 {}
 
 Individual::Individual(Individual const &other) : // data member initializer list
@@ -17,6 +18,7 @@ Individual::Individual(Individual const &other) : // data member initializer lis
     ,pc{other.pc[0],other.pc[1]}
     ,pr{other.pr[0],other.pr[1]}
     ,repertoire(other.repertoire)
+    ,Wi(other.Wi)
 {
 }
 
@@ -35,13 +37,17 @@ void Individual::operator=(Individual const &other)
     }
 
     repertoire = other.repertoire;
+    Wi = other.Wi;
+
 } // end operator=()
 
 Individual::Individual(
         Individual const &mother
         ,Individual const &father
         ,Parameters const &params
-        ,std::mt19937 &rng)
+        ,std::mt19937 &rng) :
+    Wi{0.0}
+    ,repertoire(params.n_traits,0) // start with empty repertoire, of size n_traits
 {
     // initialize a bunch of random number distributions
     std::uniform_real_distribution<> uniform{0,1.0};

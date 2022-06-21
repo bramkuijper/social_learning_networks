@@ -5,16 +5,25 @@
 
 // make a patch with nf females and nm males
 Patch::Patch(Parameters const &params) :
-    nf{params.n[0]}
-    ,nm{params.n[1]}
-    ,envt2{false}
+    nf{params.n[0]} // initialize number females
+    ,nm{params.n[1]} // initialize number males
+    ,envt2{false} // initialize local environmental state
+    ,Wtot{0} // initialize group level fitness value
 {
+    // make a 'standard' individual with which we will
+    // initialize the population. It has a repertoire size of
+    // params.n_traits
+    Individual standard_individual(
+            params.n_traits);
+    
     // initialize the population of male and female breeders
     
     // make two vectors of individuals, one for females
     // make two vectors of individuals, the other for males
-    std::vector < Individual > stack_females(nf, Individual(params.n_traits));
-    std::vector < Individual > stack_males(nm, Individual(params.n_traits));
+
+
+    std::vector < Individual > stack_females(nf, standard_individual);
+    std::vector < Individual > stack_males(nm, standard_individual);
 
     // add the females and then the males, resulting in a 
     // 2 dimensional vector of breeders
@@ -25,8 +34,8 @@ Patch::Patch(Parameters const &params) :
 
     // make the juvenile population, following the same recipe 
     // as for the female and male breeders
-    std::vector<Individual> juvsf(0, Individual(params.n_traits));
-    std::vector<Individual> juvsm(0, Individual(params.n_traits));
+    std::vector<Individual> juvsf(0, standard_individual);
+    std::vector<Individual> juvsm(0, standard_individual);
 
     // add the females and then the males, resulting in a 
     // 2 dimensional vector of juveniles 

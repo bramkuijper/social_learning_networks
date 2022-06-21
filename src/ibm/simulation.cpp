@@ -38,12 +38,13 @@ Simulation::Simulation(Parameters const &par) :
         n_patches_2 += metapop[patch_idx].envt2;
     }
 
-} // end IBM_Mutualism
+} // end IBM_Mutualism constructor
 
 // run the simulation
 void Simulation::run()
 {
     // write the headers to the output file
+    // so that all columns have names in the output file
     write_data_headers();
 
     // we loop over all the time steps and perform a whole life cycle
@@ -70,19 +71,22 @@ void Simulation::run()
         switch(event_chooser(rng_r))
         {
             case 0:
-                environmental_change(0);
+                environmental_change(0); // a patch in envtal state 1 changes its envt
                 break;
             case 1:
-                environmental_change(1);
+                environmental_change(1); // a patch in envtal state 2 changes its envt
                 break;
             case 2:
-                death_birth();
+                death_birth(); // a random individual dies and is replaced
                 break;
             default:
-                throw std::range_error("Something is going wrong in the event chooser. Not good.");
+                throw std::range_error("Something is going wrong in the event chooser. There are more event options than currently accommodated for.");
                 break;
-        }
-    }
+        } // end switch
+    } // end for time_step
+
+    // write the networks to a file
+    void write_all_networks();
 
     // write parameters to output
     void write_parameters();
@@ -93,6 +97,7 @@ void Simulation::run()
 // that needs to be changed
 void Simulation::environmental_change(bool const is_envt2)
 {
+    // sample a random patch that will change
     int random_patch = patch_sampler(rng_r);
 
     for (int attempt_idx = 0; 
@@ -117,10 +122,16 @@ void Simulation::environmental_change(bool const is_envt2)
                 --n_patches_2;
             }
 
+            metapop[random_patch].calculate_W();
+
             break;
         }
+        else // ok the sampled patch was not in the desired state, sample again
+        {
+            random_patch = patch_sampler(rng_r);
+        }
     } // end for
-}
+} // end void Simulation::environmental_change
 
 
 // write parameters to a file
@@ -129,25 +140,48 @@ void Simulation::write_parameters()
     data_file << std::endl
         << std::endl;
 
+    std::string sex_str;
+
     for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
     {
-
+        sex_str = sex_idx == female ? "f" : "m";
+        data_file << "d" << sex_str << ";" << d[sex_idx] << std::endl;
+        data_file << "n" << sex_str << ";" << n[sex_idx] << std::endl;
     }
-}
+
+    for (int envt_idx = 0; envt_idx < 2; ++envt_idx)
+    {
+        data_file << "switch_rate" 
+            << (envt_idx + 1) << ";" << 
+            << switch_rate[envt_idx] << std::endl;
+    }
+
+    data_file << "random_seed;" << seed << std::endl;
+    data_file << "n_traits;" << n_traits << std::endl;
+    data_file << "npatches;" << npatches << std::endl;
+    data_file << "n_learning_attempts;" << n_learning_attempts << std::endl;
+
+    data_file << "mu_il;" << mu_il << std::endl;
+    data_file << "mu_pp;" << mu_pp << std::endl;
+
+    data_file << "mu_pc;" << mu_pc << std::endl;
+    data_file << "mu_pr;" << mu_pr << std::endl;
+} // Simulation::write_parameters()
 
 void Simulation::death_birth()
 {
-    // pick random individual to die
+    // pick random patch to select individual to die
+    //
     // effectively there are npatches * (nf + nm) individuals
-    int random_patch = patch_sampler(rng_r);
+    int random_patch_idx = patch_sampler(rng_r);
 
     // whether it is a male or a female that dies
-    bool is_male = uniform(rng_r) < 0.5;
+    bool is_male = uniform(rng_r) < par.nm / (par.nf + par.nm);
 
     // make a distribution to randomly sample the individual
     // of a particular sex who will die 
     std::uniform_int_distribution<int> 
-        to_die_sampler(0, metapop[random_patch].breeders[is_male].size());
+        to_die_sampler(0, metapop[random_patch_idx].breeders[is_male].size());
 
     // sample the individual
     int individual_id = to_die_sampler(rng_r);
@@ -155,21 +189,24 @@ void Simulation::death_birth()
     int individual_location_in_network = individual_id;
 
     // if this individual i is a male, note that its index
-    // in the network is nf + i
+    // in the network is then nf + i
+    // this is because the network is a (nf + nm) x (nf + nm) 
+    // matrix (i.e., males have rows below those of females)
     if (is_male)
     {
-        individual_location_in_network += metapop[random_patch].nf;
+        individual_location_in_network += 
+            metapop[random_patch_idx].nf;
     }
 
     // get number of columns in aux variable to speed things up
-    int ncols = metapop[random_patch].network[
+    int ncols = metapop[random_patch_idx].network[
         individual_location_in_network].size();
 
     // bounds checking
     assert(individual_location_in_network >= 0);
     assert(individual_location_in_network < ncols);
-    assert(individual_location_in_network < metapop[random_patch].nf 
-            + metapop[random_patch].nm);
+    assert(individual_location_in_network < metapop[random_patch_idx].nf 
+            + metapop[random_patch_idx].nm);
 
     // set everything in the social learning network 
     // relating to this individual to 0
@@ -178,18 +215,45 @@ void Simulation::death_birth()
         // set all connections in which 
         // individual serves as learner
         // to 0
-        metapop[random_patch].network[
+        metapop[random_patch_idx].network[
             individual_location_in_network][col_idx] = false;
 
         // set all connections in which 
         // individual serves as model
         // to 0
-        metapop[random_patch].network[col_idx][
+        metapop[random_patch_idx].network[col_idx][
             individual_location_in_network] = false;
     }
+
+    sample_parents(random_patch_idx
+        mother_idx 
+        father_idx
+
+            );
+
+    // then make a new individual and have that individual learn
+    make_new_individual(
+            random_patch_idx
+            ,is_male
+            ,individual_location_in_network
+            );
 } // end death_birth
 
+void sample_parents
 
+
+// make new individual and have that individual
+// learn, either individually or from others
+void Simulation::make_new_individual(
+        int const destination_patch_idx
+        ,bool const is_male
+        ,int individual_location_in_network
+        ,int mother_location_in_network
+        ,int father_location_in_network
+        )
+{
+    
+} // end Simulation::make_new_individual
 
 // writes the headers to the data files
 void Simulation::write_data_headers()
