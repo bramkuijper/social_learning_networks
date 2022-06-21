@@ -4,18 +4,17 @@
 #include "individual.hpp"
 
 // make a patch with nf females and nm males
-Patch::Patch(
-        int const nf
-        ,int const nm) :
-    nf{nf}
-    ,nm{nm}
+Patch::Patch(Parameters const &params) :
+    nf{params.n[0]}
+    ,nm{params.n[1]}
+    ,envt2{false}
 {
     // initialize the population of male and female breeders
     
     // make two vectors of individuals, one for females
     // make two vectors of individuals, the other for males
-    std::vector < Individual > stack_females(nf, Individual());
-    std::vector < Individual > stack_males(nm, Individual());
+    std::vector < Individual > stack_females(nf, Individual(params.n_traits));
+    std::vector < Individual > stack_males(nm, Individual(params.n_traits));
 
     // add the females and then the males, resulting in a 
     // 2 dimensional vector of breeders
@@ -26,8 +25,8 @@ Patch::Patch(
 
     // make the juvenile population, following the same recipe 
     // as for the female and male breeders
-    std::vector<Individual> juvsf(0, Individual());
-    std::vector<Individual> juvsm(0, Individual());
+    std::vector<Individual> juvsf(0, Individual(params.n_traits));
+    std::vector<Individual> juvsm(0, Individual(params.n_traits));
 
     // add the females and then the males, resulting in a 
     // 2 dimensional vector of juveniles 
@@ -56,6 +55,7 @@ Patch::Patch(
 Patch::Patch(Patch const &other) :
     nf{other.nf}
     ,nm{other.nm}
+    ,envt2{other.envt2}
     ,breeders{other.breeders[0],other.breeders[1]}
     ,juveniles{other.juveniles[0],other.juveniles[1]}
 {
@@ -74,6 +74,8 @@ void Patch::operator=(Patch const &other)
 {
     nf = other.nf;
     nm = other.nm;
+    envt2 = other.envt2;
+
     for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
     {
         breeders[sex_idx] = other.breeders[sex_idx];

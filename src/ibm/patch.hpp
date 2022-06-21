@@ -8,7 +8,7 @@
 
 class Patch
 {
-    private:
+    public:
         std::vector < std::vector < Individual > > breeders;
         std::vector < std::vector < Individual > > juveniles;
         std::vector < std::vector < bool > > network;
@@ -16,10 +16,10 @@ class Patch
         int nf;
         int nm;
 
-    public:
+        bool envt2;
+
         // Patch constructor: make a patch with nf females and nm males
-        Patch(int const nf
-                ,int const nm);
+        Patch(Parameters const &params);
         
         // copy constructor - makes a patch out of another patch
         Patch(Patch const &other);

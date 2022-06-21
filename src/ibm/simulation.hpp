@@ -16,9 +16,13 @@
 class Simulation
 {
     private:
-        // the file to which data (simulation stats, parameters)
+        // the file to which summary data (simulation stats, parameters)
         // will be written
         std::ofstream data_file;
+        
+        // the file to which network data (simulation stats, parameters)
+        // will be written
+        std::ofstream data_file_network;
 
         // keep track of the time step of the simulation
         long unsigned time_step = 0;
@@ -38,6 +42,9 @@ class Simulation
 
         // uniform distribution to compare against probabilities
         std::uniform_real_distribution<double> uniform;
+
+        // uniform distribution to sample a random patch
+        std::uniform_int_distribution<int> patch_sampler;
         
         // parameter object
         // containing all the parameters for this run
@@ -48,6 +55,7 @@ class Simulation
         double mean_surv_prob[2] = {0.0,0.0};
         int nsurvivors[2] = {0,0};
         double mean_offspring[2] = {0.0,0.0};
+        int n_patches_2 = 0;
 
         // the metapopulation consisting of pods, here called patches
         std::vector < Patch > metapop;
@@ -64,6 +72,14 @@ class Simulation
         void write_parameters();
         // write all the networks to the output file
         void write_all_networks();
+
+        // randomly select individual to die and then
+        // seek replacement
+        void death_birth();
+
+        // change the environment of a local pod
+        void environmental_change(bool const is_envt_2);
+
 
         // function that actually runs the simulation
         void run();

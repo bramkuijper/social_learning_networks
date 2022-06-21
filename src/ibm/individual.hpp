@@ -4,23 +4,34 @@
 #include <random>
 #include "parameters.hpp"
 
+// the individual object
+// containing the traits and states 
+// of an individual
+
 class Individual
 {
     public:
-        // learn from parent
+        // prob to learn as an individual learner
+        // social learning is 1 - il
+        double il = 0.0;
+
+        // prob to make network connection with parent
         // first locus is mom, 2nd locus is dad
         double pp[2] = {0.0,0.0};
         
-        // learn from individual connected to parent
+        // prob to make network connection with non-parent relative
         // first locus is female rel, 2nd locus is male rel
         double pc[2] = {0.0,0.0};
         
-        // learn from random individual 
+        // prob to make network connection with random individual
         // first locus is female, 2nd locus is male
         double pr[2] = {0.0,0.0};
+       
+        // the repertoire as in Smolla & Akcay (see p8)
+        std::vector < int > repertoire;
 
         // default constructor
-        Individual();
+        Individual(int const repertoire_size);
 
         // copy constructor
         Individual(Individual const &other);

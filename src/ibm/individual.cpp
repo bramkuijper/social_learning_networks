@@ -3,28 +3,39 @@
 #include "individual.hpp"
 #include "parameters.hpp"
 
-Individual::Individual() : // data member initializer list
-    pp{0.0,0.0}
+Individual::Individual(int const repertoire_size) : // data member initializer list
+    il{0.0}
+    ,pp{0.0,0.0}
     ,pc{0.0,0.0}
     ,pr{0.0,0.0}
+    ,repertoire(repertoire_size,0)
 {}
 
 Individual::Individual(Individual const &other) : // data member initializer list
-    pp{other.pp[0],other.pp[1]}
+    il{other.il}
+    ,pp{other.pp[0],other.pp[1]}
     ,pc{other.pc[0],other.pc[1]}
     ,pr{other.pr[0],other.pr[1]}
+    ,repertoire(other.repertoire)
 {
 }
 
+// assignment operator allows one to assign
+// individual other to the current individual 
+// while making sure
+// all the data is neatly copied 
 void Individual::operator=(Individual const &other)
 {
+    il = other.il;
     for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
     {
         pp[sex_idx] = other.pp[sex_idx];
         pc[sex_idx] = other.pc[sex_idx];
         pr[sex_idx] = other.pr[sex_idx];
     }
-}
+
+    repertoire = other.repertoire;
+} // end operator=()
 
 Individual::Individual(
         Individual const &mother
@@ -41,10 +52,29 @@ Individual::Individual(
     // bernoulli distribution to determine whether
     // allele will be inherited from mom vs dad
     std::bernoulli_distribution from_mother{0.5};
+        
 
-    // inherit and mutate alleles
+    // inherit allele from one or the other
+    il = from_mother(rng) ? 
+        mother.il : father.il;
+
+    // if there is a mutation, update the allelic value
+    if (uniform(rng) < params.mu_il)
+    {
+        il += normal(rng);
+    }
+
+    // restrict value between 0 and 1
+    il = std::clamp(il, 0.0, 1.0);
+
+
+
+    // inherit and mutate alleles  - traits are sex
+    // specific (learning from male vs female)
     for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
     {
+
+
         // inherit allele from mom or dad
         pp[sex_idx] = from_mother(rng) ? 
             mother.pp[sex_idx] : father.pp[sex_idx];
@@ -60,7 +90,6 @@ Individual::Individual(
 
 
         // do the same re the other traits...
-
         pc[sex_idx] = from_mother(rng) ? 
             mother.pc[sex_idx] : father.pc[sex_idx];
 
@@ -82,5 +111,5 @@ Individual::Individual(
         }
 
         pr[sex_idx] = std::clamp(pr[sex_idx], 0.0, 1.0);
-    }
+    } // end for int sex_idx
 } // end birth constructor

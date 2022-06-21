@@ -19,12 +19,29 @@ class Parameters
         double mortality_baseline = 0.1;
 
         // number of males and females per patch
-        int n[2] = {5,5};
+        int n[2] = {10,10};
 
+        // sex-biased dispersal
         // dispersal probability 
         double d[2] = {0.1,0.5};
 
         double envt_change[2] = {0.1,0.5};
+
+        // number of learning attempts to create proficiency in any trait
+        int n_learning_attempts = 25;
+
+        // is this a generalist simulation
+        bool sim_generalist = true;
+
+        // number of traits in repertoire
+        int n_traits = 100;
+
+        // variable to specify max search attempts
+        // e.g., when changing an environment
+        int max_search_attempts = 30;
+
+        // environmental switch rates
+        double switch_rate[2] = {0.0,0.0};
 
         // maximum number of time steps the simulation
         // should be running
@@ -33,11 +50,20 @@ class Parameters
         // number of pods
         unsigned int npatches = 50;
 
-        std::string base_name = "sim_network";
+        // file names:
+        // the file name for the averages and other stats
+        std::string base_name = "sim_network_stats";
+        // the file name for the network data
+        std::string base_name_matrix_file = "sim_network_data";
 
+        // mutation probabilities for each of the traits
+        // see individual.hpp for a description
+        double mu_il = 0.01;
         double mu_pp = 0.01;
         double mu_pc = 0.01;
         double mu_pr = 0.01;
+
+        // standard deviation of the mutational effect size distribution
         double sdmu = 0.02;
 };
 
