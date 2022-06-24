@@ -68,6 +68,9 @@ void Simulation::run()
             ,rate_of_change[1]
             ,death_rate};
 
+        // sample from the event chooser
+        // and then perform actions according to what
+        // was sampled
         switch(event_chooser(rng_r))
         {
             case 0:
@@ -168,6 +171,7 @@ void Simulation::write_parameters()
     data_file << "mu_pr;" << mu_pr << std::endl;
 } // Simulation::write_parameters()
 
+// death followed by a birth
 void Simulation::death_birth()
 {
     // pick random patch to select individual to die
@@ -228,7 +232,6 @@ void Simulation::death_birth()
     sample_parents(random_patch_idx
         mother_idx 
         father_idx
-
             );
 
     // then make a new individual and have that individual learn
@@ -239,7 +242,14 @@ void Simulation::death_birth()
             );
 } // end death_birth
 
-void sample_parents
+void Simulation::sample_parents(
+        int const local_patch_idx)
+{
+    assert(local_patch_idx >= 0);
+    assert(local_patch_idx < metapop.size());
+
+    Wloc = metapop[local_patch_idx].calculate_W();
+}// end Simulation::sample_parents()
 
 
 // make new individual and have that individual
