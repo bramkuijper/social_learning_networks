@@ -14,8 +14,10 @@ class Patch
         std::vector < std::vector < bool > > network;
 
         // number of female and male breeders
-        int nf;
-        int nm;
+        int nf = 5;
+        int nm = 5;
+
+        double Wtot = 0;
 
 
         // local environmental state

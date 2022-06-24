@@ -119,3 +119,33 @@ Individual::Individual(
         pr[sex_idx] = std::clamp(pr[sex_idx], 0.0, 1.0);
     } // end for int sex_idx
 } // end birth constructor
+
+// obtain fitness
+double Individual::update_W(bool const is_envt2)
+{
+    if (is_envt2)
+    {
+        int ntraits = 0;
+        for (int trait_idx = 0; 
+                trait_idx < repertoire.size(); ++trait_idx)
+        {
+            if (repertoire[trait_idx] > 0)
+            {
+                ++ntraits;
+            }
+        }
+
+        return (ntraits);
+    }
+
+    // this is never reached unless envt = 1
+
+    // specialist envt: find iterator pointing to 
+    // max element in list
+    auto iterator_of_max_elmt = std::max_element(
+            repertoire.begin()
+            ,repertoire.end());
+
+    // return value of max element
+    return(*iterator_of_max_elmt);
+} // update_W
