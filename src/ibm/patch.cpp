@@ -3,11 +3,13 @@
 #include "patch.hpp"
 #include "individual.hpp"
 
+
+
 // make a patch with nf females and nm males
 Patch::Patch(Parameters const &params) :
     nf{params.n[0]} // initialize number females
     ,nm{params.n[1]} // initialize number males
-    ,envt2{false} // initialize local environmental state
+    ,envt2{false} // initialize local environmental state: is it 2 or 1?
     ,Wtot{0} // initialize group level fitness value
 {
     // make a 'standard' individual with which we will
@@ -55,8 +57,25 @@ Patch::Patch(Parameters const &params) :
     {
         network.push_back(network_row);
     }
+
+    // update fitness for this patch
+    calculate_W();
 } // end Patch::Patch()
- 
+
+// calculate fitness for each patch
+void Patch::calculate_W()
+{
+    Wtot = 0;
+
+    for (int breeder_f_idx = 0; 
+            breeder_f_idx < breeders[Female].size();
+            ++breeder_f_ifx)
+    {
+        Wtot += breeders[Female].breeder_f_idx.update_W(envt2);
+    }
+} // end Path
+
+
 // make a copy constructor. This constructor makes a copy of
 // an object. This is particularly useful if you store patches 
 // in vectors (which we do, to create the metapopulation as a whole)
@@ -75,6 +94,9 @@ Patch::Patch(Patch const &other) :
 
     assert(network.size() == nf + nm);
 } // end Patch::Patch(Patch const &other)
+
+
+
 
 // overload the assignment operator so that we can assign
 // one patch variable to another patch variable, without losing

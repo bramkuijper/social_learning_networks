@@ -24,6 +24,9 @@ Simulation::Simulation(Parameters const &par) :
     ,metapop{par.npatches, Patch(par)} // initialize a meta population each with n1 individuals of species 1 and n2 individuals of species 2
 {
     // initialize patch environments
+    //
+    // count the number of patches in environmental state 2
+    // (number of patches in environmental state 1 = par.npatches - n_patches_2)
     n_patches_2 = 0;
 
     // overall frequency of environment 2 is 
@@ -125,6 +128,11 @@ void Simulation::environmental_change(bool const is_envt2)
                 --n_patches_2;
             }
 
+            // calculate fitness for this changed patch - 
+            // as the environment
+            // has now changed its previous fitness value does not 
+            // make much sense anymore
+            // hence we recalculate
             metapop[random_patch].calculate_W();
 
             break;
@@ -148,27 +156,27 @@ void Simulation::write_parameters()
     for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
     {
         sex_str = sex_idx == female ? "f" : "m";
-        data_file << "d" << sex_str << ";" << d[sex_idx] << std::endl;
-        data_file << "n" << sex_str << ";" << n[sex_idx] << std::endl;
+        data_file << "d" << sex_str << ";" << par.d[sex_idx] << std::endl;
+        data_file << "n" << sex_str << ";" << par.n[sex_idx] << std::endl;
     }
 
     for (int envt_idx = 0; envt_idx < 2; ++envt_idx)
     {
         data_file << "switch_rate" 
             << (envt_idx + 1) << ";" << 
-            << switch_rate[envt_idx] << std::endl;
+            << par.switch_rate[envt_idx] << std::endl;
     }
 
     data_file << "random_seed;" << seed << std::endl;
-    data_file << "n_traits;" << n_traits << std::endl;
-    data_file << "npatches;" << npatches << std::endl;
-    data_file << "n_learning_attempts;" << n_learning_attempts << std::endl;
+    data_file << "n_traits;" << par.n_traits << std::endl;
+    data_file << "npatches;" << par.npatches << std::endl;
+    data_file << "n_learning_attempts;" << par.n_learning_attempts << std::endl;
 
-    data_file << "mu_il;" << mu_il << std::endl;
-    data_file << "mu_pp;" << mu_pp << std::endl;
+    data_file << "mu_il;" << par.mu_il << std::endl;
+    data_file << "mu_pp;" << par.mu_pp << std::endl;
 
-    data_file << "mu_pc;" << mu_pc << std::endl;
-    data_file << "mu_pr;" << mu_pr << std::endl;
+    data_file << "mu_pc;" << par.mu_pc << std::endl;
+    data_file << "mu_pr;" << par.mu_pr << std::endl;
 } // Simulation::write_parameters()
 
 // death followed by a birth
@@ -243,14 +251,44 @@ void Simulation::death_birth()
 } // end death_birth
 
 void Simulation::sample_parents(
-        int const local_patch_idx)
+        int const local_patch_idx
+        ,bool const is_male
+        )
 {
     assert(local_patch_idx >= 0);
     assert(local_patch_idx < metapop.size());
 
+    // get local fitness
     Wloc = metapop[local_patch_idx].calculate_W();
-}// end Simulation::sample_parents()
 
+    // get av fitness from any remote patch
+    // (maybe offspring originates from remote patch instead)
+    double Wremote = 0.0;
+
+    for (int patch_idx = 0; patch_idx < metapop.size(); ++patch_idx)
+    {
+        Wremote += metapop[patch_idx].Wtot;
+    }
+
+    // divide through patches, as 
+    // any dispersing offspring may land on any of Npatches patches.
+    // Hence probability of landing on this patch is 1/Npatches
+    Wremote /= metapop.size();
+
+    // sample from local patch unless..
+    int patch_to_sample = local_patch_idx;
+
+    // we sample a remotely born offspring
+    if (uniform(rng) < d[is_male] * Wglob / 
+            (d[is_male] * Wglob + (1.0 - d[is_male]) * Wloc))
+    {
+        patch_to_sample = patch_sampler(rng);
+    }
+
+    // now sample parents according to their fitnesses within that patch
+
+
+}// end Simulation::sample_parents()
 
 // make new individual and have that individual
 // learn, either individually or from others

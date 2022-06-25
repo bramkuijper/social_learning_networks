@@ -26,6 +26,9 @@ class Individual
         // prob to make network connection with random individual
         // first locus is female, 2nd locus is male
         double pr[2] = {0.0,0.0};
+
+        // variable specifying individual fitness
+        double Wi = 0.0;
        
         // the repertoire as in Smolla & Akcay (see p8)
         std::vector < int > repertoire;
