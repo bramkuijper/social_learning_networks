@@ -89,6 +89,8 @@ class Simulation
             ,int const individual_idx // index in vector of breeders that this individual will take up
         );
 
+        void learn();
+
         // function that actually runs the simulation
         void run();
 };

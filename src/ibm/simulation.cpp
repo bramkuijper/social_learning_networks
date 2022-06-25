@@ -163,7 +163,7 @@ void Simulation::write_parameters()
     for (int envt_idx = 0; envt_idx < 2; ++envt_idx)
     {
         data_file << "switch_rate" 
-            << (envt_idx + 1) << ";" << 
+            << (envt_idx + 1) << ";" 
             << par.switch_rate[envt_idx] << std::endl;
     }
 
@@ -190,7 +190,7 @@ void Simulation::death_birth()
     // whether it is a male or a female that dies
     // if 0 (false) female, if 1 (true) male - see also 
     // the Sex enum in parameters.hpp
-    Sex is_male = uniform(rng_r) < par.nm / (par.nf + par.nm);
+    Sex is_male = (Sex)(uniform(rng_r) < par.n[male] / (par.n[female] + par.n[male]));
 
     // make a distribution to randomly sample the individual
     // of a particular sex who will die 
@@ -210,8 +210,7 @@ void Simulation::death_birth()
     // matrix (i.e., males have rows below those of females)
     if (is_male)
     {
-        individual_location_in_network += 
-            metapop[random_patch_idx].nf;
+        individual_location_in_network += par.n[female];
     }
 
     // get number of columns in network matrix
@@ -260,7 +259,7 @@ void Simulation::make_new_individual(
     assert(local_patch_idx < metapop.size());
 
     // fitness of the local patch
-    double Wloc = metapop[local_patch_idx].Wtot();
+    double Wloc = metapop[local_patch_idx].Wtot;
 
     // to calculate probability that vacant breeding position 
     // will be taken my immigrant individual
@@ -276,14 +275,17 @@ void Simulation::make_new_individual(
     // Hence probability of landing on this patch is 1/Npatches
     Wremote /= metapop.size();
 
-    // sample from local patch unless..
+    // by default, sample from local patch, unless..
     int patch_to_sample = local_patch_idx;
 
-    // we sample a remotely born offspring
-    if (uniform(rng) < d[is_male] * Wremote / 
-            (d[is_male] * Wremote + (1.0 - d[is_male]) * Wloc))
+    // ... we sample a remotely born offspring with a 
+    // probability equal to  
+    // the average productivity of a remote patch
+    // times the dispersal rate 
+    if (uniform(rng_r) < par.d[offspring_is_male] * Wremote / 
+            (par.d[offspring_is_male] * Wremote + (1.0 - par.d[offspring_is_male]) * Wloc))
     {
-        patch_to_sample = patch_sampler(rng);
+        patch_to_sample = patch_sampler(rng_r);
     }
 
     // now sample parents according to their fitnesses within that patch
@@ -291,6 +293,7 @@ void Simulation::make_new_individual(
     // parent only dies after reproduction (cf. Smolla & Akcay)
     std::vector<double> Wifs;
 
+    // set up the sampling distribution values of productivity for males and females
     for (int female_idx = 0; female_idx < par.n[female]; ++female_idx)
     {
         Wifs.push_back(metapop[patch_to_sample].breeders[female][female_idx].Wi);
@@ -304,9 +307,14 @@ void Simulation::make_new_individual(
     }
 
 
+    // make sampling distributions of female and male fitness values
+    // so that those individuals with larger values are more likely to be
+    // chosen from the ditsitribution
     std::discrete_distribution<int> female_sampler(Wifs.begin(), Wifs.end());
     std::discrete_distribution<int> male_sampler(Wims.begin(), Wims.end());
 
+    int mother_idx = female_sampler(rng_r);
+    int father_idx = male_sampler(rng_r);
 
     // bounds checking
     assert(mother_idx >= 0);
@@ -323,7 +331,7 @@ void Simulation::make_new_individual(
         metapop[patch_to_sample].breeders[female][mother_idx] // mom
         ,metapop[patch_to_sample].breeders[male][father_idx] // dad
         ,par // Parameter object to get at mutation rates
-        ,rng);
+        ,rng_r);
 
 
     // put offspring in place of the now dead breeder
@@ -342,6 +350,12 @@ void Simulation::write_data_headers()
 
     // headers of the normal data file
     data_file << "time_step;" << std::endl;;
+}
+
+// we need to have this individual learn
+void Simulation::learn()
+{
+
 }
 
 void Simulation::write_data()
@@ -386,7 +400,7 @@ void Simulation::write_all_networks()
                     // each row prints current time step and patch index 
                     data_file_network << time_step << ";" << patch_idx << ";";
 
-                    if (row_idx < nf)
+                    if (row_idx < par.n[female])
                     {
                         // the learner is a female - print her ID
                         data_file_network << "f" << (row_idx + 1) << ";";
@@ -396,10 +410,10 @@ void Simulation::write_all_networks()
                         // the learner is a male  - print his ID
                         // we need to subtract nf from the row index to start
                         // counting males
-                        data_file_network << "m" << (row_idx - nf + 1) << ";";
+                        data_file_network << "m" << (row_idx - par.n[female] + 1) << ";";
                     }
                     
-                    if (col_idx < nf)
+                    if (col_idx < par.n[female])
                     {
                         // the model is a female - print her ID
                         data_file_network << "f" << (col_idx + 1) << ";";
@@ -409,7 +423,7 @@ void Simulation::write_all_networks()
                         // the model is a male  - print his ID
                         // we need to subtract nf from the col index to start
                         // counting males
-                        data_file_network << "m" << (col_idx - nf + 1) << ";";
+                        data_file_network << "m" << (col_idx - par.n[female] + 1) << ";";
                     }
 
                     data_file_network << std::endl;
