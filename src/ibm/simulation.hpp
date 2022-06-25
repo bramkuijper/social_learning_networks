@@ -60,6 +60,9 @@ class Simulation
         // the metapopulation consisting of pods, here called patches
         std::vector < Patch > metapop;
 
+        // the total fitness sum over all patches and individuals
+        double W_global_total = 0.0;
+
     public:
         // the simulation constructor - building a simulation object
         Simulation(Parameters const &params);
@@ -80,6 +83,11 @@ class Simulation
         // change the environment of a local pod
         void environmental_change(bool const is_envt_2);
 
+        void make_new_individual(
+            int const local_patch_idx // index of patch where offspring will establish as breeder
+            ,bool const offspring_is_male // offspring will be male or female 
+            ,int const individual_idx // index in vector of breeders that this individual will take up
+        );
 
         // function that actually runs the simulation
         void run();

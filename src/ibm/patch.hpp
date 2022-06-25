@@ -30,6 +30,11 @@ class Patch
         Patch(Patch const &other);
 
         void operator=(Patch const &other);
+
+        // Calculate total fitness of the patch.
+        // This depends on the environment
+        // but this is a  class member variable
+        double calculate_W();
 };
 
 

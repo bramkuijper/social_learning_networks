@@ -6,6 +6,9 @@
 // header file with basic ingredients for the simulation
 // such as parameters and enumerators (enums)
 
+
+// make a data type that translates 
+// male and female to array indices
 enum Sex
 {
     female = 0,

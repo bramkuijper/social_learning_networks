@@ -51,6 +51,8 @@ class Individual
                     ,Individual const &father
                     ,Parameters const &params
                     ,std::mt19937 &rng);
+
+        double update_W(bool const envt_is_2);
 };
 
 #endif

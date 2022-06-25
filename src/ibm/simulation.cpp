@@ -16,7 +16,7 @@ Simulation::Simulation(Parameters const &par) :
     ,seed{rd()} // initialize seed
     ,rng_r{seed} // initialize the random number generator
     ,uniform{0.0,1.0} // initialize the uniform distribution
-    ,patch_sampler{0,(int)par.npatches-1} // initialize the patch sampling distribution
+    ,patch_sampler{0,(int)par.npatches - 1} // initialize the patch sampling distribution
     ,data_file{par.base_name.c_str()} // initialize the data file by giving it a name
     ,data_file_network{par.base_name_matrix_file.c_str()} // initialize network data file
                                                           // by giving it a name
@@ -137,7 +137,7 @@ void Simulation::environmental_change(bool const is_envt2)
 
             break;
         }
-        else // ok the sampled patch was not in the desired state, sample again
+        else // ok the sampled patch was not in the desired state, sample another
         {
             random_patch = patch_sampler(rng_r);
         }
@@ -188,7 +188,9 @@ void Simulation::death_birth()
     int random_patch_idx = patch_sampler(rng_r);
 
     // whether it is a male or a female that dies
-    bool is_male = uniform(rng_r) < par.nm / (par.nf + par.nm);
+    // if 0 (false) female, if 1 (true) male - see also 
+    // the Sex enum in parameters.hpp
+    Sex is_male = uniform(rng_r) < par.nm / (par.nf + par.nm);
 
     // make a distribution to randomly sample the individual
     // of a particular sex who will die 
@@ -196,9 +198,11 @@ void Simulation::death_birth()
         to_die_sampler(0, metapop[random_patch_idx].breeders[is_male].size());
 
     // sample the individual
-    int individual_id = to_die_sampler(rng_r);
+    // that will die on this random patch
+    int individual_idx = to_die_sampler(rng_r);
 
-    int individual_location_in_network = individual_id;
+    // ask where ths individual resides in the network matrix
+    int individual_location_in_network = individual_idx;
 
     // if this individual i is a male, note that its index
     // in the network is then nf + i
@@ -210,18 +214,20 @@ void Simulation::death_birth()
             metapop[random_patch_idx].nf;
     }
 
-    // get number of columns in aux variable to speed things up
+    // get number of columns in network matrix
+    // and store it in variable to speed things up
+    // when we will loop through the matrix
     int ncols = metapop[random_patch_idx].network[
         individual_location_in_network].size();
 
-    // bounds checking
+    // bounds checking of dying individual's location in network
     assert(individual_location_in_network >= 0);
     assert(individual_location_in_network < ncols);
     assert(individual_location_in_network < metapop[random_patch_idx].nf 
             + metapop[random_patch_idx].nm);
 
     // set everything in the social learning network 
-    // relating to this individual to 0
+    // relating to this individual to 0 - as the indiv
     for (int col_idx = 0; col_idx < ncols; ++col_idx)
     {
         // set all connections in which 
@@ -237,38 +243,33 @@ void Simulation::death_birth()
             individual_location_in_network] = false;
     }
 
-    sample_parents(random_patch_idx
-        mother_idx 
-        father_idx
-            );
-
-    // then make a new individual and have that individual learn
     make_new_individual(
-            random_patch_idx
+            random_patch_idx 
             ,is_male
-            ,individual_location_in_network
+            ,individual_idx
             );
-} // end death_birth
+} // end Simulation::death_birth()
 
-void Simulation::sample_parents(
-        int const local_patch_idx
-        ,bool const is_male
+void Simulation::make_new_individual(
+        int const local_patch_idx // index of patch where offspring will establish as breeder
+        ,bool const offspring_is_male // offspring will be male or female 
+        ,int const individual_idx // index in vector of breeders that this individual will take up
         )
 {
     assert(local_patch_idx >= 0);
     assert(local_patch_idx < metapop.size());
 
-    // get local fitness
-    Wloc = metapop[local_patch_idx].calculate_W();
+    // fitness of the local patch
+    double Wloc = metapop[local_patch_idx].Wtot();
 
-    // get av fitness from any remote patch
-    // (maybe offspring originates from remote patch instead)
-    double Wremote = 0.0;
-
-    for (int patch_idx = 0; patch_idx < metapop.size(); ++patch_idx)
-    {
-        Wremote += metapop[patch_idx].Wtot;
-    }
+    // to calculate probability that vacant breeding position 
+    // will be taken my immigrant individual
+    // calculate productivity of all remote patches (including the local one, 
+    // which does not matter too much if the total # patches is large)
+    // and more realistic as by accident individual can disperse and
+    // still end up in original patch (as is also reflected in random
+    // patch sampling below).
+    double Wremote = W_global_total;
 
     // divide through patches, as 
     // any dispersing offspring may land on any of Npatches patches.
@@ -279,29 +280,59 @@ void Simulation::sample_parents(
     int patch_to_sample = local_patch_idx;
 
     // we sample a remotely born offspring
-    if (uniform(rng) < d[is_male] * Wglob / 
-            (d[is_male] * Wglob + (1.0 - d[is_male]) * Wloc))
+    if (uniform(rng) < d[is_male] * Wremote / 
+            (d[is_male] * Wremote + (1.0 - d[is_male]) * Wloc))
     {
         patch_to_sample = patch_sampler(rng);
     }
 
     // now sample parents according to their fitnesses within that patch
+    // and make offspring. This may include the 'dead' parent, implying that the
+    // parent only dies after reproduction (cf. Smolla & Akcay)
+    std::vector<double> Wifs;
 
-
-}// end Simulation::sample_parents()
-
-// make new individual and have that individual
-// learn, either individually or from others
-void Simulation::make_new_individual(
-        int const destination_patch_idx
-        ,bool const is_male
-        ,int individual_location_in_network
-        ,int mother_location_in_network
-        ,int father_location_in_network
-        )
-{
+    for (int female_idx = 0; female_idx < par.n[female]; ++female_idx)
+    {
+        Wifs.push_back(metapop[patch_to_sample].breeders[female][female_idx].Wi);
+    }
     
-} // end Simulation::make_new_individual
+    std::vector<double> Wims;
+
+    for (int male_idx = 0; male_idx < par.n[male]; ++male_idx)
+    {
+        Wims.push_back(metapop[patch_to_sample].breeders[male][male_idx].Wi);
+    }
+
+
+    std::discrete_distribution<int> female_sampler(Wifs.begin(), Wifs.end());
+    std::discrete_distribution<int> male_sampler(Wims.begin(), Wims.end());
+
+
+    // bounds checking
+    assert(mother_idx >= 0);
+    assert(mother_idx < par.n[female]);
+    assert(mother_idx < metapop[patch_to_sample].breeders[female].size());
+
+    assert(father_idx >= 0);
+    assert(father_idx < par.n[male]);
+    assert(father_idx < metapop[patch_to_sample].breeders[male].size());
+
+    // use the birth constructor  in individual.cpp
+    // to produce a new offspring
+    Individual offspring(
+        metapop[patch_to_sample].breeders[female][mother_idx] // mom
+        ,metapop[patch_to_sample].breeders[male][father_idx] // dad
+        ,par // Parameter object to get at mutation rates
+        ,rng);
+
+
+    // put offspring in place of the now dead breeder
+    // and then perform learning
+    metapop[local_patch_idx].breeders[offspring_is_male][individual_idx] = offspring;
+
+    // now perform learning, which 
+    // could happen either post or pre dispersal
+}// end Simulation::sample_parents()
 
 // writes the headers to the data files
 void Simulation::write_data_headers()

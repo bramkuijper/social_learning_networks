@@ -63,18 +63,26 @@ Patch::Patch(Parameters const &params) :
 } // end Patch::Patch()
 
 // calculate fitness for each patch
-void Patch::calculate_W()
+double Patch::calculate_W()
 {
     Wtot = 0;
 
     for (int breeder_f_idx = 0; 
-            breeder_f_idx < breeders[Female].size();
-            ++breeder_f_ifx)
+            breeder_f_idx < breeders[female].size();
+            ++breeder_f_idx)
     {
-        Wtot += breeders[Female].breeder_f_idx.update_W(envt2);
+        Wtot += breeders[female][breeder_f_idx].update_W(envt2);
     }
-} // end Path
+    
+    for (int breeder_m_idx = 0; 
+            breeder_m_idx < breeders[male].size();
+            ++breeder_m_idx)
+    {
+        Wtot += breeders[male][breeder_m_idx].update_W(envt2);
+    }
 
+    return(Wtot);
+} // end Patch::calculate_W()
 
 // make a copy constructor. This constructor makes a copy of
 // an object. This is particularly useful if you store patches 

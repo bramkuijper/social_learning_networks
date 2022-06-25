@@ -38,7 +38,6 @@ void Individual::operator=(Individual const &other)
 
     repertoire = other.repertoire;
     Wi = other.Wi;
-
 } // end operator=()
 
 Individual::Individual(
@@ -123,6 +122,7 @@ Individual::Individual(
 // obtain fitness
 double Individual::update_W(bool const is_envt2)
 {
+    Wi = 0;
     if (is_envt2)
     {
         int ntraits = 0;
@@ -146,6 +146,8 @@ double Individual::update_W(bool const is_envt2)
             repertoire.begin()
             ,repertoire.end());
 
+    Wi = *iterator_of_max_elmt;
+
     // return value of max element
-    return(*iterator_of_max_elmt);
+    return(Wi);
 } // update_W
