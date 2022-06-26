@@ -52,9 +52,6 @@ class Simulation
         
         // for stats purposes collect
         // the mean survival probability and other things
-        double mean_surv_prob[2] = {0.0,0.0};
-        int nsurvivors[2] = {0,0};
-        double mean_offspring[2] = {0.0,0.0};
         int n_patches_2 = 0;
 
         // the metapopulation consisting of pods, here called patches

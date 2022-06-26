@@ -70,7 +70,7 @@ void Simulation::run()
     // each and every time step
     for (time_step = 0; time_step < par.max_time_steps; ++time_step)
     {
-
+        std::cout << "time step: " << time_step << std::endl;
         // total rate of environmental change
         // is:
         // number of envt 1 patches * switch_rate[0]
@@ -217,7 +217,7 @@ void Simulation::death_birth()
     // make a distribution to randomly sample the individual
     // of a particular sex who will die 
     std::uniform_int_distribution<int> 
-        to_die_sampler(0, metapop[random_patch_idx].breeders[is_male].size());
+        to_die_sampler(0, metapop[random_patch_idx].breeders[is_male].size() - 1);
 
     // sample the individual
     // that will die on this random patch
@@ -279,6 +279,9 @@ void Simulation::make_new_individual(
 {
     assert(local_patch_idx >= 0);
     assert(local_patch_idx < metapop.size());
+    
+    assert(individual_idx >= 0);
+    assert(individual_idx < metapop[local_patch_idx].breeders[offspring_is_male].size());
 
     // fitness of the local patch
     double Wloc = metapop[local_patch_idx].Wtot;
@@ -528,8 +531,24 @@ void Simulation::write_data_headers()
     data_file_network << "time_step;patch;from;to;" << std::endl;
 
     // headers of the normal data file
-    data_file << "time_step;" << std::endl;;
-}
+    data_file << "time_step;mean_il;var_il;";
+
+    std::string sex_abbr[2] = {"f","m"};
+
+    for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
+    {
+        data_file << "mean_pp" << sex_abbr[sex_idx] 
+            << ";var_pp" << sex_abbr[sex_idx] << ";";
+
+        data_file << "mean_pc" << sex_abbr[sex_idx] 
+            << ";var_pc" << sex_abbr[sex_idx] << ";";
+        
+        data_file << "mean_pr" << sex_abbr[sex_idx] 
+            << ";var_pr" << sex_abbr[sex_idx] << ";";
+    } // for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
+
+    data_file << "W_global_total;" << std::endl;
+} // end Simulation::write_data_headers()
 
 // actually learn from others 
 // and increase repertoire
@@ -690,8 +709,117 @@ void Simulation::learn(
 // write statistics
 void Simulation::write_data()
 {
+    // means
+    double mean_pp[2] = {0.0,0.0};
+    double mean_pc[2] = {0.0,0.0};
+    double mean_pr[2] = {0.0,0.0};
+    double mean_il = 0.0;
+   
+    // sums of squares for the variances 
+    double ss_pp[2] = {0.0,0.0};
+    double ss_pc[2] = {0.0,0.0};
+    double ss_pr[2] = {0.0,0.0};
+    double ss_il = 0.0;
 
-}
+    // some helper variables to store trait values
+    double il,pp,pc,pr;
+
+    for (int patch_idx = 0; patch_idx < metapop.size(); ++patch_idx)
+    {
+        for (int female_idx = 0; female_idx < par.n[female]; ++female_idx)
+        {
+            il = metapop[patch_idx].breeders[female][female_idx].il;
+
+            mean_il += il;
+            ss_il += il * il;
+
+            for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
+            {
+                pp = metapop[patch_idx].breeders[female][female_idx].pp[sex_idx];
+                
+                mean_pp[sex_idx] += pp;
+                ss_pp[sex_idx] += pp * pp;
+                
+                pc = metapop[patch_idx].breeders[female][female_idx].pc[sex_idx];
+                
+                mean_pc[sex_idx] += pc;
+                ss_pc[sex_idx] += pc * pc;
+                
+                pr = metapop[patch_idx].breeders[female][female_idx].pr[sex_idx];
+                
+                mean_pr[sex_idx] += pr;
+                ss_pr[sex_idx] += pr * pr;
+            }
+        }
+        
+        for (int male_idx = 0; male_idx < par.n[male]; ++male_idx)
+        {
+            il = metapop[patch_idx].breeders[male][male_idx].il;
+
+            mean_il += il;
+            ss_il += il * il;
+
+            for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
+            {
+                pp = metapop[patch_idx].breeders[male][male_idx].pp[sex_idx];
+                
+                mean_pp[sex_idx] += pp;
+                ss_pp[sex_idx] += pp * pp;
+                
+                pc = metapop[patch_idx].breeders[male][male_idx].pc[sex_idx];
+                
+                mean_pc[sex_idx] += pc;
+                ss_pc[sex_idx] += pc * pc;
+                
+                pr = metapop[patch_idx].breeders[male][male_idx].pr[sex_idx];
+                
+                mean_pr[sex_idx] += pr;
+                ss_pr[sex_idx] += pr * pr;
+            }
+        }
+    } // for (int patch_idx = 0; patch_idx < metapop.size(); ++patch_idx)
+
+    int n_tot = metapop.size() * (par.n[female] + par.n[male]);
+    
+    mean_il /= n_tot;
+    double var_il = ss_il / n_tot - mean_il * mean_il;
+
+    data_file << time_step << ";" << mean_il << ";" << var_il << ";";
+
+    double var_pp[2] = {0.0,0.0};
+    double var_pc[2] = {0.0,0.0};
+    double var_pr[2] = {0.0,0.0};
+
+    for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
+    {
+        mean_pp[sex_idx] /= n_tot;
+
+        var_pp[sex_idx] = ss_pp[sex_idx] / n_tot - 
+            mean_pp[sex_idx] * mean_pp[sex_idx];
+
+        data_file << mean_pp[sex_idx] << ";" << var_pp[sex_idx] << ";";
+
+        // and now pr
+        
+        mean_pr[sex_idx] /= n_tot;
+
+        var_pr[sex_idx] = ss_pr[sex_idx] / n_tot - 
+            mean_pr[sex_idx] * mean_pr[sex_idx];
+
+        data_file << mean_pr[sex_idx] << ";" << var_pr[sex_idx] << ";";
+
+        // and now pc
+        
+        mean_pc[sex_idx] /= n_tot;
+
+        var_pc[sex_idx] = ss_pc[sex_idx] / n_tot - 
+            mean_pc[sex_idx] * mean_pc[sex_idx];
+
+        data_file << mean_pc[sex_idx] << ";" << var_pc[sex_idx] << ";";
+    } // for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
+
+    data_file << W_global_total << ";" << std::endl;
+} // end Simulation::write_data()
 
 // print all nodes and possibly edges 
 // in long format (data.frame format)
