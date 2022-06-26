@@ -70,6 +70,8 @@ Individual::Individual(
     }
 
     // restrict value between 0 and 1
+    // because this is the probability to learn individual
+    // (rather than socially)
     il = std::clamp(il, 0.0, 1.0);
 
 
@@ -91,6 +93,7 @@ Individual::Individual(
         }
 
         // restrict value between 0 and 1
+        // coz probability
         pp[sex_idx] = std::clamp(pp[sex_idx], 0.0, 1.0);
 
 
@@ -123,6 +126,7 @@ Individual::Individual(
 double Individual::update_W(bool const is_envt2)
 {
     Wi = 0;
+
     if (is_envt2)
     {
         int ntraits = 0;

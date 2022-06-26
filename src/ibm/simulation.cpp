@@ -4,6 +4,7 @@
 #include <random> // random number generating libraries
 #include <vector>
 #include <cassert>
+#include <numeric>
 #include "simulation.hpp"
 #include "patch.hpp"
 #include "individual.hpp"
@@ -353,10 +354,74 @@ void Simulation::write_data_headers()
 }
 
 // we need to have this individual learn
-void Simulation::learn()
+void Simulation::learn(
+    int const local_patch_idx // patch where this individual eventually lives
+    ,int const patch_of_origin_idx  // patch where individual is born (i.e., where its parents are)
+    ,Sex const offspring_is_male // whether individual is male or female
+    ,int const individual_idx // its index in the vector of breeders
+    ,int const mother_id // the idx of the mom
+    ,int const father_id // the idx of the dad
+    )
 {
+    // individual should have an empty reportoire
+    // check whether that is indeed the case
+    double sum_rep = std::accumulate(
+            metapop[local_patch_idx].breeders[offspring_is_male][individual_idx].repertoire.begin()
+            ,metapop[local_patch_idx].breeders[offspring_is_male][individual_idx].repertoire.end()
+            ,0);
 
-}
+    assert(sum_rep == 0.0);
+
+    // find out whether one learns from a remote patch or a local patch
+    int patch_learn = par.learn_remote ? patch_of_origin_idx : local_patch_idx;
+
+    assert(patch_learn >= 0);
+    assert(patch_learn < metapop.size());
+
+
+    // make a vector that describes the probability pi_i as in
+    // Smolla & Akcay 
+    std::vector<int> pi_t(par.n_traits,0);
+
+    // first sum trait numbers of females
+    for (int female_idx = 0; female_idx < par.n[female]; ++female_idx)
+    {
+        for (int trait_idx = 0; trait_idx < par.ntraits, ++trait_idx)
+        {
+            // increase count of this trait
+            if (metapop[patch_learn].breeders[female][female_idx].repertoire[trait_idx] > 0)
+            {
+                ++pi_t[trait_idx]; 
+            }
+        }
+    }
+    
+    for (int male_idx = 0; male_idx < par.n[male]; ++male_idx)
+    {
+        for (int trait_idx = 0; trait_idx < par.ntraits, ++trait_idx)
+        {
+            // increase count of this trait
+            if (metapop[patch_learn].breeders[male][male_idx].repertoire[trait_idx] > 0)
+            {
+                ++pi_t[trait_idx]; 
+            }
+        }
+    }
+
+    // make a discrete distribution to choose the trait
+    std::discrete_distribution<int> trait_chooser(
+            pi_t.begin(),pi_t.end());
+
+
+
+
+    // check whether we perform individual learning
+    if (uniform(rng_r) < metapop[local_patch_idx].breeders[offspring_is_male][individual_idx].il) 
+    {
+        // 
+        for (int i = 0; 
+    }
+} // end Simulation::learn()
 
 void Simulation::write_data()
 {

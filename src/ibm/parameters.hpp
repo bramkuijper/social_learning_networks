@@ -33,11 +33,11 @@ class Parameters
         // number of learning attempts to create proficiency in any trait
         int n_learning_attempts = 25;
 
-        // is this a generalist simulation
-        bool sim_generalist = true;
+        // if an offspring is immigrant, should it learn
+        // remotely or locally
 
         // number of traits in repertoire
-        int n_traits = 100;
+        int n_traits = 30;
 
         // variable to specify max search attempts
         // e.g., when changing an environment
