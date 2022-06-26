@@ -1,6 +1,9 @@
 // the heart of the code:  Simulation::functions describing the 
 // different parts of the life cycle
 
+
+
+
 #include <random> // random number generating libraries
 #include <vector>
 #include <cassert>
@@ -17,17 +20,18 @@ Simulation::Simulation(Parameters const &par) :
     ,seed{rd()} // initialize seed
     ,rng_r{seed} // initialize the random number generator
     ,uniform{0.0,1.0} // initialize the uniform distribution
-    ,patch_sampler{0,(int)par.npatches - 1} // initialize the patch sampling distribution
+    ,patch_sampler{0,(int)par.n_patches - 1} // initialize the patch sampling distribution
     ,data_file{par.base_name.c_str()} // initialize the data file by giving it a name
     ,data_file_network{par.base_name_matrix_file.c_str()} // initialize network data file
                                                           // by giving it a name
     ,par{par} // initialize the parameter data member with the constructor argument
-    ,metapop{par.npatches, Patch(par)} // initialize a meta population each with n1 individuals of species 1 and n2 individuals of species 2
+    ,metapop{par.n_patches, Patch(par)} // initialize a meta population each with n1 individuals of species 1 and n2 individuals of species 2
+    ,W_global_total{0.0} // set total fitness to 0
 {
     // initialize patch environments
     //
     // count the number of patches in environmental state 2
-    // (number of patches in environmental state 1 = par.npatches - n_patches_2)
+    // (number of patches in environmental state 1 = par.n_patches - n_patches_2)
     n_patches_2 = 0;
 
     // overall frequency of environment 2 is 
@@ -35,11 +39,22 @@ Simulation::Simulation(Parameters const &par) :
     double prob_envt2 = par.switch_rate[1]/(par.switch_rate[1] + 
             par.switch_rate[0]);
 
+    
+    // set the environment for each patch
+    // initialize the network for each patch
+    // as a random network
     for (int patch_idx = 0; patch_idx < metapop.size(); ++patch_idx)
     {
         metapop[patch_idx].envt2 = uniform(rng_r) < prob_envt2;
 
         n_patches_2 += metapop[patch_idx].envt2;
+
+        // create a random network in each patch
+        metapop[patch_idx].make_random_network(
+                par.p_network_init
+                ,rng_r);
+
+        W_global_total += metapop[patch_idx].calculate_W();
     }
 
 } // end IBM_Mutualism constructor
@@ -115,7 +130,7 @@ void Simulation::environmental_change(bool const is_envt2)
         // patch change the local environment
         if (metapop[random_patch].envt2 == is_envt2)
         {
-            metapop[random_patch].envt2 != metapop[random_patch].envt2;
+            metapop[random_patch].envt2 = !metapop[random_patch].envt2;
 
             // new environment is 2
             //
@@ -170,8 +185,14 @@ void Simulation::write_parameters()
 
     data_file << "random_seed;" << seed << std::endl;
     data_file << "n_traits;" << par.n_traits << std::endl;
-    data_file << "npatches;" << par.npatches << std::endl;
+    data_file << "n_patches;" << par.n_patches << std::endl;
+    data_file << "n_patches;" << par.n_patches << std::endl;
     data_file << "n_learning_attempts;" << par.n_learning_attempts << std::endl;
+
+    // see eq. (1) in Smolla & Akcay
+    data_file << "gamma;" << par.gamma << std::endl;
+    // see eq. (2) in Smolla & Akcay
+    data_file << "sigma;" << par.sigma << std::endl;
 
     data_file << "mu_il;" << par.mu_il << std::endl;
     data_file << "mu_pp;" << par.mu_pp << std::endl;
@@ -185,7 +206,7 @@ void Simulation::death_birth()
 {
     // pick random patch to select individual to die
     //
-    // effectively there are npatches * (nf + nm) individuals
+    // effectively there are n_patches * (nf + nm) individuals
     int random_patch_idx = patch_sampler(rng_r);
 
     // whether it is a male or a female that dies
@@ -277,7 +298,7 @@ void Simulation::make_new_individual(
     Wremote /= metapop.size();
 
     // by default, sample from local patch, unless..
-    int patch_to_sample = local_patch_idx;
+    int patch_origin_idx = local_patch_idx;
 
     // ... we sample a remotely born offspring with a 
     // probability equal to  
@@ -286,7 +307,7 @@ void Simulation::make_new_individual(
     if (uniform(rng_r) < par.d[offspring_is_male] * Wremote / 
             (par.d[offspring_is_male] * Wremote + (1.0 - par.d[offspring_is_male]) * Wloc))
     {
-        patch_to_sample = patch_sampler(rng_r);
+        patch_origin_idx = patch_sampler(rng_r);
     }
 
     // now sample parents according to their fitnesses within that patch
@@ -297,14 +318,14 @@ void Simulation::make_new_individual(
     // set up the sampling distribution values of productivity for males and females
     for (int female_idx = 0; female_idx < par.n[female]; ++female_idx)
     {
-        Wifs.push_back(metapop[patch_to_sample].breeders[female][female_idx].Wi);
+        Wifs.push_back(metapop[patch_origin_idx].breeders[female][female_idx].Wi);
     }
     
     std::vector<double> Wims;
 
     for (int male_idx = 0; male_idx < par.n[male]; ++male_idx)
     {
-        Wims.push_back(metapop[patch_to_sample].breeders[male][male_idx].Wi);
+        Wims.push_back(metapop[patch_origin_idx].breeders[male][male_idx].Wi);
     }
 
 
@@ -320,28 +341,185 @@ void Simulation::make_new_individual(
     // bounds checking
     assert(mother_idx >= 0);
     assert(mother_idx < par.n[female]);
-    assert(mother_idx < metapop[patch_to_sample].breeders[female].size());
+    assert(mother_idx < metapop[patch_origin_idx].breeders[female].size());
 
     assert(father_idx >= 0);
     assert(father_idx < par.n[male]);
-    assert(father_idx < metapop[patch_to_sample].breeders[male].size());
+    assert(father_idx < metapop[patch_origin_idx].breeders[male].size());
 
     // use the birth constructor  in individual.cpp
     // to produce a new offspring
     Individual offspring(
-        metapop[patch_to_sample].breeders[female][mother_idx] // mom
-        ,metapop[patch_to_sample].breeders[male][father_idx] // dad
+        metapop[patch_origin_idx].breeders[female][mother_idx] // mom
+        ,metapop[patch_origin_idx].breeders[male][father_idx] // dad
         ,par // Parameter object to get at mutation rates
         ,rng_r);
 
 
     // put offspring in place of the now dead breeder
     // and then perform learning
-    metapop[local_patch_idx].breeders[offspring_is_male][individual_idx] = offspring;
+    metapop[local_patch_idx].
+        breeders[offspring_is_male][individual_idx] = offspring;
 
-    // now perform learning, which 
-    // could happen either post or pre dispersal
+    // make the network 
+    // for this individual
+    generate_network(
+        local_patch_idx
+        ,patch_origin_idx
+        ,individual_idx
+        ,(Sex)offspring_is_male
+        ,mother_idx
+        ,father_idx
+        );
+
+    // now perform learning
+    learn(
+        local_patch_idx // patch where this individual eventually lives
+        ,patch_origin_idx  // patch where individual is born (i.e., where its parents are)
+        ,(Sex)offspring_is_male // whether individual is male or female
+        ,individual_idx // its index in the vector of breeders
+        ,mother_idx // the idx of the mom
+        ,father_idx // the idx of the dad
+        );
 }// end Simulation::sample_parents()
+
+void Simulation::generate_network(
+        int const local_patch_idx
+        ,int const patch_origin_idx
+        ,int const offspring_idx
+        ,Sex const offspring_sex
+        ,int const mother_idx
+        ,int const father_idx
+        )
+{
+    // bounds checking - once we set NDEBUG this is all turned off
+    assert(local_patch_idx >= 0);
+    assert(local_patch_idx < metapop.size());
+    
+    assert(patch_origin_idx >= 0);
+    assert(patch_origin_idx < metapop.size());
+    
+    assert(offspring_idx >= 0);
+    assert(offspring_idx < metapop[local_patch_idx].breeders[offspring_sex].size());
+
+    // helper variable informing us about offspring's place in network matrix
+    int individual_network_idx = offspring_idx;
+
+    // as male columns and rows in the network matrix are placed 
+    // below those of the female columns and rows, increase index
+    // if this is a male, by the total columns/rows allocated to females
+    if (offspring_sex == male)
+    {
+        individual_network_idx += par.n[female];
+    }
+
+    // similarly, make a help variable that gets dad's 
+    // location in the network matrix
+    int father_network_idx = father_idx + par.n[female];
+    
+    // helper variable informing one what total rows and columns 
+    // are in network matrix
+    int total_rows_cols_matrix = par.n[female] + par.n[male];
+
+    // if debugging is on, check whether network entries 
+    // have been set to 0 for this individual
+    // when its predecessor died
+#ifndef NDEBUG    
+    for (int col_idx = 0; 
+            col_idx < total_rows_cols_matrix; ++col_idx)
+    {
+        assert(!metapop[local_patch_idx].network[individual_network_idx][col_idx]);
+        assert(!metapop[local_patch_idx].network[col_idx][individual_network_idx]);
+    }
+#endif
+
+
+    // make a copy of the individual - easier to lookup trait values
+    // rather than having to use umpteen array indices
+    Individual focal = metapop[local_patch_idx].breeders[offspring_sex][offspring_idx];
+
+
+    // individual always learns from the patch on arrival for now
+    //
+    // hence only learns from parents or individuals connected to parents
+    // when parents are present on the local patch.
+    if (local_patch_idx == patch_origin_idx)
+    {
+        // with probability pp[female] make a connection to mom
+        if (uniform(rng_r) < focal.pp[female])
+        {
+            metapop[local_patch_idx].network[individual_network_idx][mother_idx] = true;
+        }
+
+        // with probability pp[male] make a connection to dad
+        if (uniform(rng_r) < focal.pp[male])
+        {
+            metapop[local_patch_idx].
+                network[individual_network_idx][father_network_idx] = true;
+        }
+    } // end if (local_patch_idx == patch_origin_idx)
+
+    // with probability pc[female] make a connection to all the individuals
+    // in mom's network
+    // with probability pc[male] make a connection to all the individuals
+    // in dad's network
+    for (int col_idx = 0; 
+            col_idx < total_rows_cols_matrix; ++col_idx)
+    {
+        // skip mother, father and self 
+        if ((col_idx == individual_network_idx || 
+                col_idx == mother_idx) ||
+                col_idx == father_network_idx
+                )
+        {
+            continue;
+        }
+
+        // if we are among mom's community (ie., patch of origin
+        // is the patch of arrival) and mom has connection to other individual
+        // then potentially copy that connection
+        if (local_patch_idx == patch_origin_idx 
+                && metapop[local_patch_idx].network[mother_idx][col_idx])
+        {
+            // copy it with probability pc[female]
+            if (uniform(rng_r) < focal.pc[female])
+            {
+                // OK copy it to offspring
+                metapop[local_patch_idx].
+                    network[individual_network_idx][col_idx] = true;
+            }
+        } // if dad has connection to other individual
+        else if (local_patch_idx == patch_origin_idx
+                && metapop[local_patch_idx].network[father_network_idx][col_idx])
+        {
+            // copy it with probability pc[male]
+            if (uniform(rng_r) < focal.pc[male])
+            {
+                // OK copy it to offspring
+                metapop[local_patch_idx].
+                    network[individual_network_idx][col_idx] = true;
+            }
+        } 
+        else // other ind has neither connection to mom or dad, 
+        {    // hence see whether we copy randomly
+            
+            // first determine sex of potential model
+            Sex other_ind_sex = col_idx >= par.n[female] ? 
+                male
+                :
+                female;
+            
+            // then evaluate probability of establishing connection
+            // with that individual of that sex
+            if (uniform(rng_r) < focal.pr[other_ind_sex])
+            {
+                metapop[local_patch_idx].
+                    network[individual_network_idx][col_idx] = true;
+            }
+        } 
+    }
+} // end Simulation::generate_network
+
 
 // writes the headers to the data files
 void Simulation::write_data_headers()
@@ -353,11 +531,12 @@ void Simulation::write_data_headers()
     data_file << "time_step;" << std::endl;;
 }
 
-// we need to have this individual learn
+// actually learn from others 
+// and increase repertoire
 void Simulation::learn(
     int const local_patch_idx // patch where this individual eventually lives
     ,int const patch_of_origin_idx  // patch where individual is born (i.e., where its parents are)
-    ,Sex const offspring_is_male // whether individual is male or female
+    ,Sex const offspring_sex // whether individual is male or female
     ,int const individual_idx // its index in the vector of breeders
     ,int const mother_id // the idx of the mom
     ,int const father_id // the idx of the dad
@@ -365,66 +544,153 @@ void Simulation::learn(
 {
     // individual should have an empty reportoire
     // check whether that is indeed the case
-    double sum_rep = std::accumulate(
-            metapop[local_patch_idx].breeders[offspring_is_male][individual_idx].repertoire.begin()
-            ,metapop[local_patch_idx].breeders[offspring_is_male][individual_idx].repertoire.end()
+    int sum_rep = std::accumulate(
+            metapop[local_patch_idx].breeders[offspring_sex][individual_idx].repertoire.begin()
+            ,metapop[local_patch_idx].breeders[offspring_sex][individual_idx].repertoire.end()
             ,0);
 
-    assert(sum_rep == 0.0);
+    assert(sum_rep == 0);
 
-    // find out whether one learns from a remote patch or a local patch
-    int patch_learn = par.learn_remote ? patch_of_origin_idx : local_patch_idx;
-
-    assert(patch_learn >= 0);
-    assert(patch_learn < metapop.size());
-
-
-    // make a vector that describes the probability pi_i as in
-    // Smolla & Akcay 
-    std::vector<int> pi_t(par.n_traits,0);
-
-    // first sum trait numbers of females
-    for (int female_idx = 0; female_idx < par.n[female]; ++female_idx)
-    {
-        for (int trait_idx = 0; trait_idx < par.ntraits, ++trait_idx)
-        {
-            // increase count of this trait
-            if (metapop[patch_learn].breeders[female][female_idx].repertoire[trait_idx] > 0)
-            {
-                ++pi_t[trait_idx]; 
-            }
-        }
-    }
     
-    for (int male_idx = 0; male_idx < par.n[male]; ++male_idx)
+    // go through all traits of this individual's network
+    // and make the pi distribution
+    int max_network_size = par.n[female] + par.n[male];
+
+    // helper variable informing us about offspring's place in network matrix
+    int individual_network_idx = individual_idx;
+
+    // as male columns and rows in the network matrix are placed 
+    // below those of the female columns and rows, increase index
+    // if this is a male, by the total columns/rows allocated to females
+    if (offspring_sex == male)
     {
-        for (int trait_idx = 0; trait_idx < par.ntraits, ++trait_idx)
-        {
-            // increase count of this trait
-            if (metapop[patch_learn].breeders[male][male_idx].repertoire[trait_idx] > 0)
-            {
-                ++pi_t[trait_idx]; 
-            }
-        }
+        individual_network_idx += par.n[female];
     }
 
+    // make a vector that describes the probability distribution 
+    // pi_i as in Smolla & Akcay over all traits 0 <= i <= par.n_traits. 
+    // Initially, we give each trait an equal nonzero weighting
+    // of pi_i = 1. Occurrence of traits in the network then increase the
+    // count of pi_i > 1. But that pi_i > 1 does not matter as later on we put 
+    // this all in a std::discrete_distribution which samples according
+    // to relative size. Hence we do not need to scale by n_traits or something
+    // like that
+    std::vector<int> pi_t(par.n_traits,1);
+
+    // sum of the repertoire size among neighbours
+    int sum_repertoire_size = 0;
+
+    // implicit assumption in this pi_i distribution is that when 
+    // all values are 0, then trait is chosen randomly
+    
+    // helper variable to translate
+    // network position of the model to location in stack of breeders
+    int model_breeder_idx;
+
+    // helper variable to translate
+    // network position of the model to sex
+    Sex model_sex;
+
+    // loop through all the potential connections of the network
+    for (int col_idx = 0; col_idx < max_network_size; ++col_idx)
+    {
+        // update helper variables that help us to identify 
+        // model in stack of breeders and what traits (s)he has
+        model_breeder_idx = col_idx >= par.n[female] ? 
+            col_idx - par.n[female] : col_idx;
+
+        model_sex = col_idx >= par.n[female] ?
+            male : female; 
+
+        assert(model_breeder_idx >= 0);
+        assert(model_breeder_idx < par.n[model_sex]);
+
+        // OK, individual is in neighbourhood - network connection is true
+        if (metapop[local_patch_idx].network[individual_network_idx][col_idx]) 
+        {
+            // look at the individual's traits and update pi_i distribution
+            // as described on p 8 in Smolla & Akcay
+            for (int trait_idx = 0; trait_idx < par.n_traits; ++trait_idx)
+            {
+                // increase count of this trait
+                // we need to look at trait i in this model
+                // where model is of sex model_sex
+                // where model has the index model_breeder_idx;
+                if (metapop[patch_of_origin_idx].breeders[model_sex][
+                        model_breeder_idx].repertoire[trait_idx] > 0)
+                {
+                    // update count of the pi_vector with every 
+                    // nonzero trait that we encounter
+                    ++pi_t[trait_idx]; 
+                    ++sum_repertoire_size;
+                }
+            } // end for (int trait_idx = 0; trait_idx < par.n_traits, ++trait_idx)
+
+        } // end if (metapop[local_patch_idx].network[individual_network_idx][col_idx]) 
+
+    }// end for (int col_idx = 0; col_idx < max_network_size; ++col_idx)
+    
     // make a discrete distribution to choose the trait
     std::discrete_distribution<int> trait_chooser(
             pi_t.begin(),pi_t.end());
 
+    // helper variable selecting the trait that is chosen
+    int trait;
 
+    // helper variables to specify probabilities of individual
+    // and social learning given that a trait has been selected
+    double smolla_akcay_eq_1 = par.gamma / par.n_traits;
+    double smolla_akcay_eq_2; 
 
-
-    // check whether we perform individual learning
-    if (uniform(rng_r) < metapop[local_patch_idx].breeders[offspring_is_male][individual_idx].il) 
+    // now go through the rounds of learning
+    for (int learning_attempt_idx = 0; 
+            learning_attempt_idx < par.n_learning_attempts;
+            ++learning_attempt_idx)
     {
-        // 
-        for (int i = 0; 
-    }
+        // pick a trait according to pi_i
+        trait = trait_chooser(rng_r);
+
+        // check whether we perform individual learning
+        if (uniform(rng_r) < 
+                metapop[local_patch_idx].breeders[
+                    offspring_sex][individual_idx].il
+                    ) 
+        {
+            // successful individual learning 
+            if (uniform(rng_r) < smolla_akcay_eq_1)
+            {
+
+                assert(trait >= 0);
+                assert(trait < par.n_traits);
+
+
+                // success - sample a  trait and increase one's proficiency
+                // by one as on p8 in Smolla Akcay
+                ++metapop[local_patch_idx].breeders[offspring_sex]
+                    [individual_idx].repertoire[trait];
+            } // if (uniform(rng_r) < smolla_akcay_eq_1)
+        }
+        else // ok we perform social learning
+        {
+            // sigma * pi_t^2
+            smolla_akcay_eq_2 = par.sigma * (double)pi_t[trait] / sum_repertoire_size * (double)pi_t[trait] / sum_repertoire_size;
+            if (uniform(rng_r) < smolla_akcay_eq_2)
+            {
+                ++metapop[local_patch_idx].breeders[offspring_sex]
+                    [individual_idx].repertoire[trait];
+            }
+        }
+    } // end for int learning attempt
+
+    // and we are done - individual should have achieved a repertoire
+    // fingers crossed...
+
 } // end Simulation::learn()
 
+// write statistics
 void Simulation::write_data()
 {
+
 }
 
 // print all nodes and possibly edges 
@@ -434,7 +700,7 @@ void Simulation::write_data()
 // https://kateto.net/network-visualization 
 void Simulation::write_all_networks()
 {
-    // auxiliary variable to consider the number of
+    // helper variable to consider the number of
     // rows and columns of the matrix
     int sum_cols, sum_rows;
 

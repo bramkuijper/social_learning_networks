@@ -28,7 +28,7 @@ class Individual
         double pr[2] = {0.0,0.0};
 
         // variable specifying individual fitness
-        double Wi = 0.0;
+        double Wi = 1.0;
        
         // the repertoire as in Smolla & Akcay (see p8)
         std::vector < int > repertoire;

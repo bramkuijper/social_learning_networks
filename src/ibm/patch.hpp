@@ -2,6 +2,7 @@
 #define _PATCH_HPP
 
 #include <vector>
+#include <random>
 #include "individual.hpp"
 
 // blueprint of the patch class
@@ -35,6 +36,10 @@ class Patch
         // This depends on the environment
         // but this is a  class member variable
         double calculate_W();
+
+        // create a random network (typically used for initialization purposes)
+        void make_random_network(double const p_connect
+                ,std::mt19937 &rng);
 };
 
 

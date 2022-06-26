@@ -93,6 +93,28 @@ class Simulation
 
         // function that actually runs the simulation
         void run();
+
+        // generate the social network 
+        // based on pp, pr, pc etc
+        void generate_network(
+                int const local_patch_idx
+                ,int const patch_origin_idx
+                ,int const offspring_idx
+                ,Sex const offspring_sex
+                ,int const mother_idx
+                ,int const father_idx
+                );
+
+        // actually learn from others 
+        // and increase repertoire
+        void learn(
+                int const local_patch_idx // patch where this individual eventually lives
+                ,int const patch_of_origin_idx  // patch where individual is born (i.e., where its parents are)
+                ,Sex const offspring_sex // whether individual is male or female
+                ,int const individual_idx // its index in the vector of breeders
+                ,int const mother_id // the idx of the mom
+                ,int const father_id // the idx of the dad
+                );
 };
 
 #endif

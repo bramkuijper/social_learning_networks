@@ -33,6 +33,9 @@ class Parameters
         // number of learning attempts to create proficiency in any trait
         int n_learning_attempts = 25;
 
+        // initial_network connection probability
+        double p_network_init = 0.5;
+
         // if an offspring is immigrant, should it learn
         // remotely or locally
 
@@ -51,7 +54,13 @@ class Parameters
         unsigned long max_time_steps = 10;
 
         // number of pods
-        unsigned int npatches = 50;
+        unsigned int n_patches = 50;
+
+        // innovation success probability
+        // see eq. (1) in Smolla & Akcay
+        double gamma = 0.5;
+        // see eq. (2) in Smolla & Akcay
+        double sigma = 0.5;
 
         // file names:
         // the file name for the averages and other stats

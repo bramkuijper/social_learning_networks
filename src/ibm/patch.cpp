@@ -130,3 +130,17 @@ void Patch::operator=(Patch const &other)
     
     assert(network.size() == nf + nm);
 } // end Patch::Patch(Patch const &other)
+
+// make a random network in this patch with connection probability p
+void Patch::make_random_network(double const p
+        ,std::mt19937 &rng)
+{
+    std::uniform_real_distribution<double> uniform{0.0,1.0};
+    for (int row_idx = 0; row_idx < network.size(); ++row_idx)
+    {
+        for (int col_idx = 0; col_idx < network.size(); ++col_idx)
+        {
+            network[col_idx][row_idx] = uniform(rng) < p;
+        }
+    }
+} // end make_random_network()

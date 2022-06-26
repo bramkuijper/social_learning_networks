@@ -9,7 +9,7 @@ Individual::Individual(int const repertoire_size) : // data member initializer l
     ,pc{0.0,0.0}
     ,pr{0.0,0.0}
     ,repertoire(repertoire_size,0)
-    ,Wi{0.0}
+    ,Wi{1.0}
 {}
 
 Individual::Individual(Individual const &other) : // data member initializer list
@@ -45,7 +45,7 @@ Individual::Individual(
         ,Individual const &father
         ,Parameters const &params
         ,std::mt19937 &rng) :
-    Wi{0.0}
+    Wi{1.0}
     ,repertoire(params.n_traits,0) // start with empty repertoire, of size n_traits
 {
     // initialize a bunch of random number distributions
@@ -125,7 +125,10 @@ Individual::Individual(
 // obtain fitness
 double Individual::update_W(bool const is_envt2)
 {
-    Wi = 0;
+    // start fitness always with a standard value of 1
+    // as long as everybody has the same starting value of 1
+    // it does not matter (relative differences count)
+    Wi = 1.0;
 
     if (is_envt2)
     {
