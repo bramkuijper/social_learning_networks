@@ -3,7 +3,6 @@
 
 
 
-
 #include <random> // random number generating libraries
 #include <vector>
 #include <cassert>
@@ -70,7 +69,6 @@ void Simulation::run()
     // each and every time step
     for (time_step = 0; time_step < par.max_time_steps; ++time_step)
     {
-        std::cout << "time step: " << time_step << std::endl;
         // total rate of environmental change
         // is:
         // number of envt 1 patches * switch_rate[0]
@@ -105,13 +103,20 @@ void Simulation::run()
                 throw std::range_error("Something is going wrong in the event chooser. There are more event options than currently accommodated for.");
                 break;
         } // end switch
+   
+        // output stats to file every n time steps
+        if (time_step % par.data_output_interval == 0)
+        {
+            std::cout << "time step: " << time_step << std::endl;
+            write_data();
+        }
     } // end for time_step
 
     // write the networks to a file
-    void write_all_networks();
+    write_all_networks();
 
     // write parameters to output
-    void write_parameters();
+    write_parameters();
 } // end Simulation::run()
 
 // change the environment of a local pod

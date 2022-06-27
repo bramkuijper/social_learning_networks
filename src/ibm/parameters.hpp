@@ -51,7 +51,7 @@ class Parameters
 
         // maximum number of time steps the simulation
         // should be running
-        unsigned long max_time_steps = 10;
+        unsigned long max_time_steps = 1e05;
 
         // number of pods
         unsigned int n_patches = 50;
@@ -77,6 +77,9 @@ class Parameters
 
         // standard deviation of the mutational effect size distribution
         double sdmu = 0.02;
+
+        // output interval of stats
+        unsigned long data_output_interval = 100;
 };
 
 #endif
