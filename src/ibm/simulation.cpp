@@ -44,6 +44,9 @@ Simulation::Simulation(Parameters const &par) :
     // as a random network
     for (int patch_idx = 0; patch_idx < metapop.size(); ++patch_idx)
     {
+        // randomly set the environment as a function of the probability
+        // of getting environment 2. The value can either be true (envt2)
+        // or false (envt1)
         metapop[patch_idx].envt2 = uniform(rng_r) < prob_envt2;
 
         n_patches_2 += metapop[patch_idx].envt2;
@@ -78,8 +81,14 @@ void Simulation::run()
             ,n_patches_2 * par.switch_rate[1]
         };
 
-        double death_rate = metapop.size() * (par.n[0] + par.n[1]);
+        // the individual death rate is set 1 (i.e., a standard rate
+        // relative to all other rates of things happening), which means
+        // that the overall rate at which some dies 
+        // in the population is simply N
+        double death_rate = metapop.size() * (par.n[female] + par.n[male]);
 
+        // make a probability distribution of 
+        // the different events
         std::discrete_distribution<int> event_chooser{
             rate_of_change[0]
             ,rate_of_change[1]
@@ -124,6 +133,10 @@ void Simulation::run()
 // that needs to be changed
 void Simulation::environmental_change(bool const is_envt2)
 {
+    // auxiliary variable to contain the fitness
+    // of the current patch
+    double W_this_patch;
+
     // sample a random patch that will change
     int random_patch = patch_sampler(rng_r);
 
@@ -135,6 +148,12 @@ void Simulation::environmental_change(bool const is_envt2)
         // patch change the local environment
         if (metapop[random_patch].envt2 == is_envt2)
         {
+            // get current fitness on this patch
+            W_this_patch = metapop[random_patch].calculate_W();
+
+            // subtract this from the local sum
+            W_global_total -= W_this_patch;
+
             metapop[random_patch].envt2 = !metapop[random_patch].envt2;
 
             // new environment is 2
@@ -154,7 +173,9 @@ void Simulation::environmental_change(bool const is_envt2)
             // has now changed its previous fitness value does not 
             // make much sense anymore
             // hence we recalculate
-            metapop[random_patch].calculate_W();
+            W_this_patch = metapop[random_patch].calculate_W();
+
+            W_global_total += W_this_patch;
 
             break;
         }
@@ -213,6 +234,12 @@ void Simulation::death_birth()
     //
     // effectively there are n_patches * (nf + nm) individuals
     int random_patch_idx = patch_sampler(rng_r);
+
+    // OK this patch will change - let's subtract its fitness from 
+    // the global fitness count
+    double W_this_patch = metapop[random_patch_idx].calculate_W();
+
+    W_global_total -= W_this_patch;
 
     // whether it is a male or a female that dies
     // if 0 (false) female, if 1 (true) male - see also 
@@ -274,6 +301,11 @@ void Simulation::death_birth()
             ,is_male
             ,individual_idx
             );
+
+    // add fitness of this newly changed patch to the global sum
+    W_this_patch = metapop[random_patch_idx].calculate_W();
+
+    W_global_total += W_this_patch;
 } // end Simulation::death_birth()
 
 void Simulation::make_new_individual(
