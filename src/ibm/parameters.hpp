@@ -51,7 +51,7 @@ class Parameters
 
         // maximum number of time steps the simulation
         // should be running
-        unsigned long max_time_steps = 1e09;
+        unsigned long max_time_steps = 1e06;
 
         // number of pods
         unsigned int n_patches = 50;
