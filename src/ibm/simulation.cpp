@@ -217,7 +217,7 @@ void Simulation::death_birth()
     // whether it is a male or a female that dies
     // if 0 (false) female, if 1 (true) male - see also 
     // the Sex enum in parameters.hpp
-    Sex is_male = (Sex)(uniform(rng_r) < par.n[male] / (par.n[female] + par.n[male]));
+    Sex is_male = (Sex)(uniform(rng_r) < (double)par.n[male] / (par.n[female] + par.n[male]));
 
     // make a distribution to randomly sample the individual
     // of a particular sex who will die 
@@ -278,7 +278,7 @@ void Simulation::death_birth()
 
 void Simulation::make_new_individual(
         int const local_patch_idx // index of patch where offspring will establish as breeder
-        ,bool const offspring_is_male // offspring will be male or female 
+        ,bool const offspring_is_male // offspring will be male or female, this depends on who has died
         ,int const individual_idx // index in vector of breeders that this individual will take up
         )
 {
@@ -856,6 +856,7 @@ void Simulation::write_all_networks()
         {
             // bounds checking
             assert(metapop[patch_idx].network[row_idx].size() == sum_cols);
+
             for (int col_idx = 0; col_idx < sum_cols; ++col_idx)
             {
                 // only print an entry if there is a connection
