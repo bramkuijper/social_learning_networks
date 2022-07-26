@@ -51,7 +51,7 @@ class Parameters
 
         // maximum number of time steps the simulation
         // should be running
-        unsigned long max_time_steps = 1e05;
+        unsigned long max_time_steps = 1e09;
 
         // number of pods
         unsigned int n_patches = 50;
@@ -70,16 +70,22 @@ class Parameters
 
         // mutation probabilities for each of the traits
         // see individual.hpp for a description
-        double mu_il = 0.01;
-        double mu_pp = 0.01;
-        double mu_pc = 0.01;
-        double mu_pr = 0.01;
+        double mu_il = 0.1;
+        double mu_pp = 0.1;
+        double mu_pc = 0.1;
+        double mu_pr = 0.1;
+
+        // initial values of everything
+        double il_init = 0.25;
+        double pp_init = 0.25;
+        double pc_init = 0.25;
+        double pr_init = 0.25;
 
         // standard deviation of the mutational effect size distribution
         double sdmu = 0.02;
 
         // output interval of stats
-        unsigned long data_output_interval = 100;
+        unsigned long data_output_interval = 1000;
 };
 
 #endif

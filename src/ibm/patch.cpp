@@ -16,7 +16,8 @@ Patch::Patch(Parameters const &params) :
     // initialize the population. It has a repertoire size of
     // params.n_traits
     Individual standard_individual(
-            params.n_traits);
+            params.n_traits
+            ,params);
     
     // initialize the population of male and female breeders
     

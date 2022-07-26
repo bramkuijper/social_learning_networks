@@ -3,11 +3,12 @@
 #include "individual.hpp"
 #include "parameters.hpp"
 
-Individual::Individual(int const repertoire_size) : // data member initializer list
-    il{0.0}
-    ,pp{0.0,0.0}
-    ,pc{0.0,0.0}
-    ,pr{0.0,0.0}
+Individual::Individual(int const repertoire_size
+        ,Parameters const &params) : // data member initializer list
+    il{params.il_init}
+    ,pp{params.pp_init,params.pp_init}
+    ,pc{params.pc_init,params.pc_init}
+    ,pr{params.pr_init,params.pr_init}
     ,repertoire(repertoire_size,0)
     ,Wi{1.0}
 {}
@@ -49,7 +50,7 @@ Individual::Individual(
     ,repertoire(params.n_traits,0) // start with empty repertoire, of size n_traits
 {
     // initialize a bunch of random number distributions
-    std::uniform_real_distribution<> uniform{0,1.0};
+    std::uniform_real_distribution<> uniform{0.0,1.0};
 
     // normal distribution to change allelic values
     std::normal_distribution<> normal{0,params.sdmu};
@@ -80,8 +81,6 @@ Individual::Individual(
     // specific (learning from male vs female)
     for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
     {
-
-
         // inherit allele from mom or dad
         pp[sex_idx] = from_mother(rng) ? 
             mother.pp[sex_idx] : father.pp[sex_idx];

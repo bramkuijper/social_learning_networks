@@ -361,6 +361,7 @@ void Simulation::make_new_individual(
         Wifs.push_back(metapop[patch_origin_idx].breeders[female][female_idx].Wi);
     }
     
+    // vector with male fitness
     std::vector<double> Wims;
 
     for (int male_idx = 0; male_idx < par.n[male]; ++male_idx)
@@ -584,7 +585,7 @@ void Simulation::write_data_headers()
             << ";var_pr" << sex_abbr[sex_idx] << ";";
     } // for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
 
-    data_file << "W_global_total;" << std::endl;
+    data_file << "W_global_total;mean_repertoire_size;mean_pi_ts;" << std::endl;
 } // end Simulation::write_data_headers()
 
 // actually learn from others 
@@ -730,6 +731,7 @@ void Simulation::learn(
         {
             // sigma * pi_t^2
             smolla_akcay_eq_2 = par.sigma * (double)pi_t[trait] / sum_repertoire_size * (double)pi_t[trait] / sum_repertoire_size;
+
             if (uniform(rng_r) < smolla_akcay_eq_2)
             {
                 ++metapop[local_patch_idx].breeders[offspring_sex]
@@ -855,7 +857,33 @@ void Simulation::write_data()
         data_file << mean_pc[sex_idx] << ";" << var_pc[sex_idx] << ";";
     } // for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
 
-    data_file << W_global_total << ";" << std::endl;
+    data_file << W_global_total << ";";
+
+    double mean_repertoire_size = 0.0;
+    double mean_latest_pi_ts = 0.0;
+
+    for (std::vector < double >::iterator it = latest_repertoire_sizes.begin();
+            it != latest_repertoire_sizes.end();
+            ++it)
+    {
+        mean_repertoire_size += *it;
+    }
+    
+    mean_repertoire_size /= latest_repertoire_sizes.size();
+    
+    for (std::vector < double >::iterator it = latest_pi_ts.begin();
+            it != latest_pi_ts.end();
+            ++it)
+    {
+        mean_latest_pi_ts += *it;
+    }
+
+    mean_latest_pi_ts /= latest_pi_ts.size();
+
+    data_file << mean_repertoire_size << ";" 
+        << mean_latest_pi_ts << ";"
+        << std::endl;
+
 } // end Simulation::write_data()
 
 // print all nodes and possibly edges 

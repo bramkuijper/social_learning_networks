@@ -60,6 +60,12 @@ class Simulation
         // the total fitness sum over all patches and individuals
         double W_global_total = 0.0;
 
+        // vector to save stats on the average repertoire size
+        std::vector <double> latest_repertoire_sizes;
+
+        // vector to save stats on the average numbers of neighbours with trait t
+        std::vector <double> latest_pi_ts;
+
     public:
         // the simulation constructor - building a simulation object
         Simulation(Parameters const &params);

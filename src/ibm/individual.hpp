@@ -34,7 +34,7 @@ class Individual
         std::vector < int > repertoire;
 
         // default constructor
-        Individual(int const repertoire_size);
+        Individual(int const repertoire_size, Parameters const &params);
 
         // copy constructor
         Individual(Individual const &other);
