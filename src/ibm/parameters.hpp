@@ -70,10 +70,10 @@ class Parameters
 
         // mutation probabilities for each of the traits
         // see individual.hpp for a description
-        double mu_il = 0.1;
-        double mu_pp = 0.1;
-        double mu_pc = 0.1;
-        double mu_pr = 0.1;
+        double mu_il = 0.01;
+        double mu_pp = 0.01;
+        double mu_pc = 0.01;
+        double mu_pr = 0.01;
 
         // initial values of everything
         double il_init = 0.25;
