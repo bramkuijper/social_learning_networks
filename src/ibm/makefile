@@ -1,6 +1,6 @@
 EXE=social_learning_network.exe
 CPP=individual.cpp network_main.cpp simulation.cpp patch.cpp
-HPP=individual.hpp simulation.hpp patch.hpp 
+HPP=individual.hpp simulation.hpp patch.hpp parameters.hpp 
 
 CXX=g++
 CXXFLAGS=-O3 -Wall -std=c++17

@@ -2,6 +2,7 @@
 #define _INDIVIDUAL_HPP_
 
 #include <random>
+#include <vector>
 #include "parameters.hpp"
 
 // the individual object

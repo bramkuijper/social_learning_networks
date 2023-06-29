@@ -31,7 +31,7 @@ Simulation::Simulation(Parameters const &par) :
     //
     // count the number of patches in environmental state 2
     // (number of patches in environmental state 1 = par.n_patches - n_patches_2)
-    n_patches_2 = 0;
+   int n_patches_2 = 0;
 
     // overall frequency of environment 2 is 
     // switch_rate[1->2]/(switch_rate[1->2] + switch_rate[2->1])
@@ -116,7 +116,7 @@ void Simulation::run()
         // output stats to file every n time steps
         if (time_step % par.data_output_interval == 0)
         {
-            std::cout << "time step: " << time_step << std::endl;
+            std::cout << "time step:" << time_step << std::endl;
             write_data();
         }
     } // end for time_step
@@ -209,22 +209,6 @@ void Simulation::write_parameters()
             << par.switch_rate[envt_idx] << std::endl;
     }
 
-    data_file << "random_seed;" << seed << std::endl;
-    data_file << "n_traits;" << par.n_traits << std::endl;
-    data_file << "n_patches;" << par.n_patches << std::endl;
-    data_file << "n_patches;" << par.n_patches << std::endl;
-    data_file << "n_learning_attempts;" << par.n_learning_attempts << std::endl;
-
-    // see eq. (1) in Smolla & Akcay
-    data_file << "gamma;" << par.gamma << std::endl;
-    // see eq. (2) in Smolla & Akcay
-    data_file << "sigma;" << par.sigma << std::endl;
-
-    data_file << "mu_il;" << par.mu_il << std::endl;
-    data_file << "mu_pp;" << par.mu_pp << std::endl;
-
-    data_file << "mu_pc;" << par.mu_pc << std::endl;
-    data_file << "mu_pr;" << par.mu_pr << std::endl;
 } // Simulation::write_parameters()
 
 // death followed by a birth

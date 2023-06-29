@@ -15,6 +15,7 @@ enum Sex
     male = 1
 };
 
+
 class Parameters
 {
     public:
@@ -47,11 +48,11 @@ class Parameters
         int max_search_attempts = 30;
 
         // environmental switch rates
-        double switch_rate[2] = {0.0,0.0};
+        double switch_rate[2] = {0.001,1};
 
         // maximum number of time steps the simulation
         // should be running
-        unsigned long max_time_steps = 1e06;
+        unsigned long max_time_steps = 1e08;
 
         // number of pods
         unsigned int n_patches = 50;
@@ -70,10 +71,10 @@ class Parameters
 
         // mutation probabilities for each of the traits
         // see individual.hpp for a description
-        double mu_il = 0.01;
-        double mu_pp = 0.01;
-        double mu_pc = 0.01;
-        double mu_pr = 0.01;
+        double mu_il = 0.1;
+        double mu_pp = 0.1;
+        double mu_pc = 0.1;
+        double mu_pr = 0.1;
 
         // initial values of everything
         double il_init = 0.25;
@@ -85,7 +86,9 @@ class Parameters
         double sdmu = 0.02;
 
         // output interval of stats
-        unsigned long data_output_interval = 1000;
+        unsigned long data_output_interval = 1000000;
+
+
 };
 
 #endif
