@@ -787,11 +787,10 @@ void Simulation::write_data()
                 ss_pc[sex_idx] += pc * pc;
 
                 rep_size = metapop[patch_idx].breeders[female][female_idx].repertoire.size();
-
-
-         
+            }
+            mean_repertoire_size[female] += rep_size;
+            var_repertoire_size[female] += rep_size * rep_size;
         }
-}
 
         for (int male_idx = 0; male_idx < par.n[male]; ++male_idx)
         {
@@ -818,7 +817,9 @@ void Simulation::write_data()
                 ss_pc[sex_idx] += pc * pc;
 
                 rep_size = metapop[patch_idx].breeders[male][male_idx].repertoire.size();
-	}
+            }
+            mean_repertoire_size[male] += rep_size;
+            var_repertoire_size[male] += rep_size * rep_size;
         }
     } // for (int patch_idx = 0; patch_idx < metapop.size(); ++patch_idx)
 
