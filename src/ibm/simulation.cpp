@@ -26,6 +26,7 @@ Simulation::Simulation(Parameters const &par) :
     ,par{par} // initialize the parameter data member with the constructor argument
     ,metapop{par.n_patches, Patch(par)} // initialize a meta population each with n1 individuals of species 1 and n2 individuals of species 2
     ,W_global_total{0.0} // set total fitness to 0
+ 
 {
     // initialize patch environments
     //
@@ -43,7 +44,7 @@ Simulation::Simulation(Parameters const &par) :
     // initialize the network for each patch
     // as a random network
     for (int patch_idx = 0; patch_idx < metapop.size(); ++patch_idx)
-    {
+   {
         // randomly set the environment as a function of the probability
         // of getting environment 2. The value can either be true (envt2)
         // or false (envt1)
@@ -562,14 +563,14 @@ void Simulation::write_data_headers()
         data_file << "mean_pp" << sex_abbr[sex_idx] 
             << ";var_pp" << sex_abbr[sex_idx] << ";";
 
-        data_file << "mean_pc" << sex_abbr[sex_idx] 
-            << ";var_pc" << sex_abbr[sex_idx] << ";";
-        
         data_file << "mean_pr" << sex_abbr[sex_idx] 
             << ";var_pr" << sex_abbr[sex_idx] << ";";
+        
+        data_file << "mean_pc" << sex_abbr[sex_idx] 
+            << ";var_pc" << sex_abbr[sex_idx] << ";";
     } // for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
 
-    data_file << "W_global_total;mean_repertoire_size;mean_pi_ts;" << std::endl;
+    data_file << "W_global_total;mean_repertoire_size;mean_pi_ts;Freq_envt;" << std::endl;
 } // end Simulation::write_data_headers()
 
 // actually learn from others 
@@ -734,18 +735,18 @@ void Simulation::write_data()
 {
     // means
     double mean_pp[2] = {0.0,0.0};
-    double mean_pc[2] = {0.0,0.0};
     double mean_pr[2] = {0.0,0.0};
+    double mean_pc[2] = {0.0,0.0};
     double mean_il = 0.0;
    
     // sums of squares for the variances 
     double ss_pp[2] = {0.0,0.0};
-    double ss_pc[2] = {0.0,0.0};
     double ss_pr[2] = {0.0,0.0};
+    double ss_pc[2] = {0.0,0.0};
     double ss_il = 0.0;
 
     // some helper variables to store trait values
-    double il,pp,pc,pr;
+    double il,pp,pr,pc;
 
     for (int patch_idx = 0; patch_idx < metapop.size(); ++patch_idx)
     {
@@ -763,15 +764,15 @@ void Simulation::write_data()
                 mean_pp[sex_idx] += pp;
                 ss_pp[sex_idx] += pp * pp;
                 
-                pc = metapop[patch_idx].breeders[female][female_idx].pc[sex_idx];
-                
-                mean_pc[sex_idx] += pc;
-                ss_pc[sex_idx] += pc * pc;
-                
                 pr = metapop[patch_idx].breeders[female][female_idx].pr[sex_idx];
                 
                 mean_pr[sex_idx] += pr;
                 ss_pr[sex_idx] += pr * pr;
+                
+                pc = metapop[patch_idx].breeders[female][female_idx].pc[sex_idx];
+                
+                mean_pc[sex_idx] += pc;
+                ss_pc[sex_idx] += pc * pc;
             }
         }
         
@@ -789,15 +790,15 @@ void Simulation::write_data()
                 mean_pp[sex_idx] += pp;
                 ss_pp[sex_idx] += pp * pp;
                 
-                pc = metapop[patch_idx].breeders[male][male_idx].pc[sex_idx];
-                
-                mean_pc[sex_idx] += pc;
-                ss_pc[sex_idx] += pc * pc;
-                
                 pr = metapop[patch_idx].breeders[male][male_idx].pr[sex_idx];
                 
                 mean_pr[sex_idx] += pr;
                 ss_pr[sex_idx] += pr * pr;
+                
+                pc = metapop[patch_idx].breeders[male][male_idx].pc[sex_idx];
+                
+                mean_pc[sex_idx] += pc;
+                ss_pc[sex_idx] += pc * pc;
             }
         }
     } // for (int patch_idx = 0; patch_idx < metapop.size(); ++patch_idx)
@@ -810,8 +811,8 @@ void Simulation::write_data()
     data_file << time_step << ";" << mean_il << ";" << var_il << ";";
 
     double var_pp[2] = {0.0,0.0};
-    double var_pc[2] = {0.0,0.0};
     double var_pr[2] = {0.0,0.0};
+    double var_pc[2] = {0.0,0.0};
 
     for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
     {
@@ -865,8 +866,23 @@ void Simulation::write_data()
     mean_latest_pi_ts /= latest_pi_ts.size();
 
     data_file << mean_repertoire_size << ";" 
-        << mean_latest_pi_ts << ";"
-        << std::endl;
+        << mean_latest_pi_ts << ";";
+
+
+    double prob_envt2 = par.switch_rate[1] / (par.switch_rate[1] + par.switch_rate[0]);
+
+    for (int patch_idx = 0; patch_idx < metapop.size(); ++patch_idx)
+    {
+        metapop[patch_idx].envt2 = uniform(rng_r) < prob_envt2;
+
+        if (metapop[patch_idx].envt2) {
+            ++n_patches_2;
+        }	
+
+	}
+
+	data_file << prob_envt2 << ";" << std::endl;   
+
 
 } // end Simulation::write_data()
 
@@ -941,3 +957,4 @@ void Simulation::write_all_networks()
         } // end for row_idx
     } // end for patch idx
 } // end void Simulation::write_all_networks
+
