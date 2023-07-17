@@ -565,12 +565,19 @@ void Simulation::write_data_headers()
 
         data_file << "mean_pr" << sex_abbr[sex_idx] 
             << ";var_pr" << sex_abbr[sex_idx] << ";";
+
         
         data_file << "mean_pc" << sex_abbr[sex_idx] 
             << ";var_pc" << sex_abbr[sex_idx] << ";";
+
+
+
+        data_file << "mean_repertoire_size" << sex_abbr[sex_idx]
+            << ";var_repertoire_size" << sex_abbr[sex_idx] << ";";
     } // for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
 
-    data_file << "W_global_total;mean_repertoire_size;mean_pi_ts;Freq_envt;" << std::endl;
+    data_file << "W_global_total;Freq_envt" << std::endl;
+
 } // end Simulation::write_data_headers()
 
 // actually learn from others 
@@ -745,8 +752,12 @@ void Simulation::write_data()
     double ss_pc[2] = {0.0,0.0};
     double ss_il = 0.0;
 
+    double mean_repertoire_size[2] = {0.0,0.0};
+    double var_repertoire_size[2] = {0.0,0.0};
+
     // some helper variables to store trait values
-    double il,pp,pr,pc;
+
+    double il,pp,pc,pr, rep_size;
 
     for (int patch_idx = 0; patch_idx < metapop.size(); ++patch_idx)
     {
@@ -773,7 +784,13 @@ void Simulation::write_data()
                 
                 mean_pc[sex_idx] += pc;
                 ss_pc[sex_idx] += pc * pc;
-            }
+
+                rep_size = metapop[patch_idx].breeders[female][female_idx].repertoire.size();
+           
+            
+            mean_repertoire_size[female] += rep_size;
+            var_repertoire_size[female] += rep_size * rep_size;
+
         }
         
         for (int male_idx = 0; male_idx < par.n[male]; ++male_idx)
@@ -799,7 +816,12 @@ void Simulation::write_data()
                 
                 mean_pc[sex_idx] += pc;
                 ss_pc[sex_idx] += pc * pc;
-            }
+
+                rep_size = metapop[patch_idx].breeders[male][male_idx].repertoire.size();
+
+            
+            mean_repertoire_size[male] += rep_size;
+            var_repertoire_size[male] += rep_size * rep_size;
         }
     } // for (int patch_idx = 0; patch_idx < metapop.size(); ++patch_idx)
 
@@ -840,6 +862,15 @@ void Simulation::write_data()
             mean_pc[sex_idx] * mean_pc[sex_idx];
 
         data_file << mean_pc[sex_idx] << ";" << var_pc[sex_idx] << ";";
+
+
+        // repertoire sizes
+        mean_repertoire_size[sex_idx] /= metapop.size() * par.n[sex_idx];
+        var_repertoire_size[sex_idx] = 
+            var_repertoire_size[sex_idx] / (metapop.size() * par.n[sex_idx]) 
+            - mean_repertoire_size[sex_idx] * mean_repertoire_size[sex_idx];
+
+        data_file << mean_repertoire_size[sex_idx] << ";" << var_repertoire_size[sex_idx] << ";";
     } // for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
 
     data_file << W_global_total << ";";
@@ -847,14 +878,6 @@ void Simulation::write_data()
     double mean_repertoire_size = 0.0;
     double mean_latest_pi_ts = 0.0;
 
-    for (std::vector < double >::iterator it = latest_repertoire_sizes.begin();
-            it != latest_repertoire_sizes.end();
-            ++it)
-    {
-        mean_repertoire_size += *it;
-    }
-    
-    mean_repertoire_size /= latest_repertoire_sizes.size();
     
     for (std::vector < double >::iterator it = latest_pi_ts.begin();
             it != latest_pi_ts.end();
@@ -883,6 +906,7 @@ void Simulation::write_data()
 
 	data_file << prob_envt2 << ";" << std::endl;   
 
+    data_file << W_global_total << ";" << std::endl;
 
 } // end Simulation::write_data()
 
