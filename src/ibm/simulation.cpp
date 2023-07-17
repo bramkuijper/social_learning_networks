@@ -548,6 +548,7 @@ void Simulation::generate_network(
 
 
 // writes the headers to the data files
+
 void Simulation::write_data_headers()
 {
     // headers of the network file
@@ -560,14 +561,14 @@ void Simulation::write_data_headers()
 
     for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
     {
-        data_file << "mean_pp" << sex_abbr[sex_idx] 
+        data_file << "mean_pp" << sex_abbr[sex_idx]
             << ";var_pp" << sex_abbr[sex_idx] << ";";
 
-        data_file << "mean_pr" << sex_abbr[sex_idx] 
+        data_file << "mean_pr" << sex_abbr[sex_idx]
             << ";var_pr" << sex_abbr[sex_idx] << ";";
 
-        
-        data_file << "mean_pc" << sex_abbr[sex_idx] 
+
+        data_file << "mean_pc" << sex_abbr[sex_idx]
             << ";var_pc" << sex_abbr[sex_idx] << ";";
 
 
@@ -580,7 +581,7 @@ void Simulation::write_data_headers()
 
 } // end Simulation::write_data_headers()
 
-// actually learn from others 
+// actually learn from others
 // and increase repertoire
 void Simulation::learn(
     int const local_patch_idx // patch where this individual eventually lives
@@ -600,7 +601,7 @@ void Simulation::learn(
 
     assert(sum_rep == 0);
 
-    
+
     // go through all traits of this individual's network
     // and make the pi distribution
     int max_network_size = par.n[female] + par.n[male];
@@ -608,7 +609,7 @@ void Simulation::learn(
     // helper variable informing us about offspring's place in network matrix
     int individual_network_idx = individual_idx;
 
-    // as male columns and rows in the network matrix are placed 
+    // as male columns and rows in the network matrix are placed
     // below those of the female columns and rows, increase index
     // if this is a male, by the total columns/rows allocated to females
     if (offspring_sex == male)
@@ -616,11 +617,11 @@ void Simulation::learn(
         individual_network_idx += par.n[female];
     }
 
-    // make a vector that describes the probability distribution 
-    // pi_i as in Smolla & Akcay over all traits 0 <= i <= par.n_traits. 
+    // make a vector that describes the probability distribution
+    // pi_i as in Smolla & Akcay over all traits 0 <= i <= par.n_traits.
     // Initially, we give each trait an equal nonzero weighting
     // of pi_i = 1. Occurrence of traits in the network then increase the
-    // count of pi_i > 1. But that pi_i > 1 does not matter as later on we put 
+    // count of pi_i > 1. But that pi_i > 1 does not matter as later on we put
     // this all in a std::discrete_distribution which samples according
     // to relative size. Hence we do not need to scale by n_traits or something
     // like that
@@ -629,9 +630,9 @@ void Simulation::learn(
     // sum of the repertoire size among neighbours
     int sum_repertoire_size = 0;
 
-    // implicit assumption in this pi_i distribution is that when 
+    // implicit assumption in this pi_i distribution is that when
     // all values are 0, then trait is chosen randomly
-    
+
     // helper variable to translate
     // network position of the model to location in stack of breeders
     int model_breeder_idx;
@@ -643,19 +644,19 @@ void Simulation::learn(
     // loop through all the potential connections of the network
     for (int col_idx = 0; col_idx < max_network_size; ++col_idx)
     {
-        // update helper variables that help us to identify 
+        // update helper variables that help us to identify
         // model in stack of breeders and what traits (s)he has
-        model_breeder_idx = col_idx >= par.n[female] ? 
+        model_breeder_idx = col_idx >= par.n[female] ?
             col_idx - par.n[female] : col_idx;
 
         model_sex = col_idx >= par.n[female] ?
-            male : female; 
+            male : female;
 
         assert(model_breeder_idx >= 0);
         assert(model_breeder_idx < par.n[model_sex]);
 
         // OK, individual is in neighbourhood - network connection is true
-        if (metapop[local_patch_idx].network[individual_network_idx][col_idx]) 
+        if (metapop[local_patch_idx].network[individual_network_idx][col_idx])
         {
             // look at the individual's traits and update pi_i distribution
             // as described on p 8 in Smolla & Akcay
@@ -668,17 +669,17 @@ void Simulation::learn(
                 if (metapop[patch_of_origin_idx].breeders[model_sex][
                         model_breeder_idx].repertoire[trait_idx] > 0)
                 {
-                    // update count of the pi_vector with every 
+                    // update count of the pi_vector with every
                     // nonzero trait that we encounter
-                    ++pi_t[trait_idx]; 
+                    ++pi_t[trait_idx];
                     ++sum_repertoire_size;
                 }
             } // end for (int trait_idx = 0; trait_idx < par.n_traits, ++trait_idx)
 
-        } // end if (metapop[local_patch_idx].network[individual_network_idx][col_idx]) 
+        } // end if (metapop[local_patch_idx].network[individual_network_idx][col_idx])
 
     }// end for (int col_idx = 0; col_idx < max_network_size; ++col_idx)
-    
+
     // make a discrete distribution to choose the trait
     std::discrete_distribution<int> trait_chooser(
             pi_t.begin(),pi_t.end());
@@ -689,10 +690,10 @@ void Simulation::learn(
     // helper variables to specify probabilities of individual
     // and social learning given that a trait has been selected
     double smolla_akcay_eq_1 = par.gamma / par.n_traits;
-    double smolla_akcay_eq_2; 
+    double smolla_akcay_eq_2;
 
     // now go through the rounds of learning
-    for (int learning_attempt_idx = 0; 
+    for (int learning_attempt_idx = 0;
             learning_attempt_idx < par.n_learning_attempts;
             ++learning_attempt_idx)
     {
@@ -700,12 +701,12 @@ void Simulation::learn(
         trait = trait_chooser(rng_r);
 
         // check whether we perform individual learning
-        if (uniform(rng_r) < 
+        if (uniform(rng_r) <
                 metapop[local_patch_idx].breeders[
                     offspring_sex][individual_idx].il
-                    ) 
+                    )
         {
-            // successful individual learning 
+            // successful individual learning
             if (uniform(rng_r) < smolla_akcay_eq_1)
             {
 
@@ -745,8 +746,8 @@ void Simulation::write_data()
     double mean_pr[2] = {0.0,0.0};
     double mean_pc[2] = {0.0,0.0};
     double mean_il = 0.0;
-   
-    // sums of squares for the variances 
+
+    // sums of squares for the variances
     double ss_pp[2] = {0.0,0.0};
     double ss_pr[2] = {0.0,0.0};
     double ss_pc[2] = {0.0,0.0};
@@ -771,28 +772,27 @@ void Simulation::write_data()
             for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
             {
                 pp = metapop[patch_idx].breeders[female][female_idx].pp[sex_idx];
-                
+
                 mean_pp[sex_idx] += pp;
                 ss_pp[sex_idx] += pp * pp;
-                
+
                 pr = metapop[patch_idx].breeders[female][female_idx].pr[sex_idx];
-                
+
                 mean_pr[sex_idx] += pr;
                 ss_pr[sex_idx] += pr * pr;
-                
+
                 pc = metapop[patch_idx].breeders[female][female_idx].pc[sex_idx];
-                
+
                 mean_pc[sex_idx] += pc;
                 ss_pc[sex_idx] += pc * pc;
 
                 rep_size = metapop[patch_idx].breeders[female][female_idx].repertoire.size();
-           
-            
-            mean_repertoire_size[female] += rep_size;
-            var_repertoire_size[female] += rep_size * rep_size;
 
+
+         
         }
-        
+}
+
         for (int male_idx = 0; male_idx < par.n[male]; ++male_idx)
         {
             il = metapop[patch_idx].breeders[male][male_idx].il;
@@ -803,30 +803,27 @@ void Simulation::write_data()
             for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
             {
                 pp = metapop[patch_idx].breeders[male][male_idx].pp[sex_idx];
-                
+
                 mean_pp[sex_idx] += pp;
                 ss_pp[sex_idx] += pp * pp;
-                
+
                 pr = metapop[patch_idx].breeders[male][male_idx].pr[sex_idx];
-                
+
                 mean_pr[sex_idx] += pr;
                 ss_pr[sex_idx] += pr * pr;
-                
+
                 pc = metapop[patch_idx].breeders[male][male_idx].pc[sex_idx];
-                
+
                 mean_pc[sex_idx] += pc;
                 ss_pc[sex_idx] += pc * pc;
 
                 rep_size = metapop[patch_idx].breeders[male][male_idx].repertoire.size();
-
-            
-            mean_repertoire_size[male] += rep_size;
-            var_repertoire_size[male] += rep_size * rep_size;
+	}
         }
     } // for (int patch_idx = 0; patch_idx < metapop.size(); ++patch_idx)
 
     int n_tot = metapop.size() * (par.n[female] + par.n[male]);
-    
+
     mean_il /= n_tot;
     double var_il = ss_il / n_tot - mean_il * mean_il;
 
@@ -840,25 +837,25 @@ void Simulation::write_data()
     {
         mean_pp[sex_idx] /= n_tot;
 
-        var_pp[sex_idx] = ss_pp[sex_idx] / n_tot - 
+        var_pp[sex_idx] = ss_pp[sex_idx] / n_tot -
             mean_pp[sex_idx] * mean_pp[sex_idx];
 
         data_file << mean_pp[sex_idx] << ";" << var_pp[sex_idx] << ";";
 
         // and now pr
-        
+
         mean_pr[sex_idx] /= n_tot;
 
-        var_pr[sex_idx] = ss_pr[sex_idx] / n_tot - 
+        var_pr[sex_idx] = ss_pr[sex_idx] / n_tot -
             mean_pr[sex_idx] * mean_pr[sex_idx];
 
         data_file << mean_pr[sex_idx] << ";" << var_pr[sex_idx] << ";";
 
         // and now pc
-        
+
         mean_pc[sex_idx] /= n_tot;
 
-        var_pc[sex_idx] = ss_pc[sex_idx] / n_tot - 
+        var_pc[sex_idx] = ss_pc[sex_idx] / n_tot -
             mean_pc[sex_idx] * mean_pc[sex_idx];
 
         data_file << mean_pc[sex_idx] << ";" << var_pc[sex_idx] << ";";
@@ -866,19 +863,19 @@ void Simulation::write_data()
 
         // repertoire sizes
         mean_repertoire_size[sex_idx] /= metapop.size() * par.n[sex_idx];
-        var_repertoire_size[sex_idx] = 
-            var_repertoire_size[sex_idx] / (metapop.size() * par.n[sex_idx]) 
+        var_repertoire_size[sex_idx] =
+            var_repertoire_size[sex_idx] / (metapop.size() * par.n[sex_idx])
             - mean_repertoire_size[sex_idx] * mean_repertoire_size[sex_idx];
 
         data_file << mean_repertoire_size[sex_idx] << ";" << var_repertoire_size[sex_idx] << ";";
     } // for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
 
-    data_file << W_global_total << ";";
+   
 
-    double mean_repertoire_size = 0.0;
+   
     double mean_latest_pi_ts = 0.0;
 
-    
+
     for (std::vector < double >::iterator it = latest_pi_ts.begin();
             it != latest_pi_ts.end();
             ++it)
@@ -888,7 +885,7 @@ void Simulation::write_data()
 
     mean_latest_pi_ts /= latest_pi_ts.size();
 
-    data_file << mean_repertoire_size << ";" 
+    data_file << mean_repertoire_size << ";"
         << mean_latest_pi_ts << ";";
 
 
@@ -900,22 +897,23 @@ void Simulation::write_data()
 
         if (metapop[patch_idx].envt2) {
             ++n_patches_2;
-        }	
+        }
 
-	}
+        }
 
-	data_file << prob_envt2 << ";" << std::endl;   
+        data_file << prob_envt2 << ";" << std::endl;
 
     data_file << W_global_total << ";" << std::endl;
 
 } // end Simulation::write_data()
 
-// print all nodes and possibly edges 
+// print all nodes and possibly edges
 // in long format (data.frame format)
-// To get this into R, see section 3.2 
-// from the great tutorial here: 
-// https://kateto.net/network-visualization 
+// To get this into R, see section 3.2
+// from the great tutorial here:
+// https://kateto.net/network-visualization
 void Simulation::write_all_networks()
+
 {
     // helper variable to consider the number of
     // rows and columns of the matrix
@@ -946,7 +944,7 @@ void Simulation::write_all_networks()
                 // only print an entry if there is a connection
                 if (metapop[patch_idx].network[row_idx][col_idx])
                 {
-                    // each row prints current time step and patch index 
+                    // each row prints current time step and patch index
                     data_file_network << time_step << ";" << patch_idx << ";";
 
                     if (row_idx < par.n[female])
@@ -961,7 +959,7 @@ void Simulation::write_all_networks()
                         // counting males
                         data_file_network << "m" << (row_idx - par.n[female] + 1) << ";";
                     }
-                    
+
                     if (col_idx < par.n[female])
                     {
                         // the model is a female - print her ID
@@ -976,9 +974,9 @@ void Simulation::write_all_networks()
                     }
 
                     data_file_network << std::endl;
+		
                 } // end if connection yes
             } // end for col idx
         } // end for row_idx
     } // end for patch idx
 } // end void Simulation::write_all_networks
-
