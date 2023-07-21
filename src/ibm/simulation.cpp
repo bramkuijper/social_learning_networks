@@ -577,7 +577,7 @@ void Simulation::write_data_headers()
             << ";var_repertoire_size" << sex_abbr[sex_idx] << ";";
     } // for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
 
-    data_file << "W_global_total;Freq_envt" << std::endl;
+    data_file << "Freq_envt_2;W_global_total;" << std::endl;
 
 } // end Simulation::write_data_headers()
 
@@ -871,41 +871,9 @@ void Simulation::write_data()
         data_file << mean_repertoire_size[sex_idx] << ";" << var_repertoire_size[sex_idx] << ";";
     } // for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
 
-   
-
-   
-    double mean_latest_pi_ts = 0.0;
-
-
-    for (std::vector < double >::iterator it = latest_pi_ts.begin();
-            it != latest_pi_ts.end();
-            ++it)
-    {
-        mean_latest_pi_ts += *it;
-    }
-
-    mean_latest_pi_ts /= latest_pi_ts.size();
-
-    data_file << mean_repertoire_size << ";"
-        << mean_latest_pi_ts << ";";
-
-
-    double prob_envt2 = par.switch_rate[1] / (par.switch_rate[1] + par.switch_rate[0]);
-
-    for (int patch_idx = 0; patch_idx < metapop.size(); ++patch_idx)
-    {
-        metapop[patch_idx].envt2 = uniform(rng_r) < prob_envt2;
-
-        if (metapop[patch_idx].envt2) {
-            ++n_patches_2;
-        }
-
-        }
-
-        data_file << prob_envt2 << ";" << std::endl;
+    data_file << (double)n_patches_2/metapop.size() << ";";
 
     data_file << W_global_total << ";" << std::endl;
-
 } // end Simulation::write_data()
 
 // print all nodes and possibly edges
