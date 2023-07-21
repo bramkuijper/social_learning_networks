@@ -871,7 +871,7 @@ void Simulation::write_data()
         data_file << mean_repertoire_size[sex_idx] << ";" << var_repertoire_size[sex_idx] << ";";
     } // for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
 
-   
+   data_file << W_global_total << ";";
 
    
     double mean_latest_pi_ts = 0.0;
@@ -904,7 +904,7 @@ void Simulation::write_data()
 
         data_file << prob_envt2 << ";" << std::endl;
 
-    data_file << W_global_total << ";" << std::endl;
+  
 
 } // end Simulation::write_data()
 

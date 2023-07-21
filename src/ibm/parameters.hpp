@@ -86,7 +86,7 @@ class Parameters
         double sdmu = 0.1;
 
         // output interval of stats
-        unsigned long data_output_interval = 1000000;
+        unsigned long data_output_interval = 1000;
 
 
 };
