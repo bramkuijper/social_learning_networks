@@ -922,7 +922,6 @@ void Simulation::write_data()
         << mean_pi_ts << ";" 
         << mean_pi_ts_var << ";";
 
-
     data_file << (double)n_patches_2/metapop.size() << ";";
 
     data_file << W_global_total << ";" << std::endl;
