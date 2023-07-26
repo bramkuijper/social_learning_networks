@@ -65,6 +65,9 @@ class Simulation
 
         // vector to save stats on the average numbers of neighbours with trait t
         std::vector <double> latest_pi_ts;
+        
+        // vector to save stats on the average numbers of neighbours with trait t
+        std::vector <double> latest_pi_ts_var;
 
     public:
         // the simulation constructor - building a simulation object

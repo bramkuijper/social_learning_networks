@@ -54,6 +54,9 @@ class Parameters
         // should be running
         unsigned long max_time_steps = 1e08;
 
+        // how many recent repertoire sizes should we save
+        unsigned max_datapoints_stats = 1000;
+
         // number of pods
         unsigned int n_patches = 100;
 
