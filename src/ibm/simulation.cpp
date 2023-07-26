@@ -884,6 +884,7 @@ void Simulation::write_data()
         data_file << mean_pc[sex_idx] << ";" << var_pc[sex_idx] << ";";
     } // for (int sex_idx = 0; sex_idx < 2; ++sex_idx)
 
+
     double mean_rep_size = 0.0;
     double mean_pi_ts = 0.0;
     double mean_pi_ts_var = 0.0;
@@ -921,9 +922,11 @@ void Simulation::write_data()
         << mean_pi_ts << ";" 
         << mean_pi_ts_var << ";";
 
+
     data_file << (double)n_patches_2/metapop.size() << ";";
 
     data_file << W_global_total << ";" << std::endl;
+
 } // end Simulation::write_data()
 
 // print all nodes and possibly edges
