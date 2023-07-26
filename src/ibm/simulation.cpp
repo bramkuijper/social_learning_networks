@@ -913,6 +913,8 @@ void Simulation::write_data()
 
 
     mean_rep_size /= latest_repertoire_sizes.size();
+    mean_pi_ts /= latest_pi_ts.size();
+    mean_pi_ts_var /= latest_pi_ts_var.size();
 
     data_file 
         << mean_rep_size << ";" 
